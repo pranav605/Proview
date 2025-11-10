@@ -86,12 +86,14 @@
 //   )
 // }
 // v2
+import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { ChatProvider, useChats } from '@/contexts/ChatContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { Drawer } from 'expo-router/drawer';
 import { EditIcon, MessageCircle } from 'lucide-react-native';
+import { Image } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
@@ -99,12 +101,13 @@ import 'react-native-reanimated';
 function CustomDrawerContent(props: any) {
   const colorScheme = useColorScheme();
   const { chats } = useChats();
-  
+
   // Use React Navigation state instead of pathname
   const currentRoute = props.state.routes[props.state.index];
   const currentChatId = currentRoute.params?.chatid;
 
   return (
+    <ThemedView style={{flex:1}}>
     <DrawerContentScrollView {...props}>
       <DrawerItem
         label="New Search"
@@ -115,7 +118,7 @@ function CustomDrawerContent(props: any) {
         activeTintColor={Colors[colorScheme ?? 'light'].tint}
         inactiveTintColor={Colors[colorScheme ?? 'light'].text}
         focused={currentRoute.name === 'index'}
-        style={{borderRadius:12}}
+        style={{ borderRadius: 12 }}
       />
 
       {chats.map((chat) => (
@@ -135,7 +138,23 @@ function CustomDrawerContent(props: any) {
           focused={currentChatId === chat.id}
         />
       ))}
+
+
     </DrawerContentScrollView>
+          <DrawerItem
+        label={"Jane Doe"}
+        onPress={() => {
+          alert("Settings")
+        }}
+        icon={({ color, size }) => <Image source={{
+        uri: 'https://variety.com/wp-content/uploads/2021/10/Evan-Spiegel-Snap-chief-executive-officer.png',
+      }} alt='user' style={{ width: 35, height: 35, borderRadius: 25 }}/>}
+        activeTintColor={Colors[colorScheme ?? 'light'].tint}
+        inactiveTintColor={Colors[colorScheme ?? 'light'].text}
+        focused={currentRoute.name === 'profile'}
+        style={{ borderRadius: 0, paddingBottom: 30, paddingTop: 15, backgroundColor:'#272929ff' }}
+      />
+    </ThemedView>
   );
 }
 
@@ -156,7 +175,7 @@ function DrawerNavigator() {
             backgroundColor: Colors[colorScheme ?? 'light'].background,
           },
           headerTintColor: Colors[colorScheme ?? 'light'].text,
-          drawerItemStyle:{
+          drawerItemStyle: {
             borderRadius: 4,
           }
         }}
