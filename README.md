@@ -35,7 +35,9 @@ ProView is a React Native app built with **Expo**, **Google Gemini API**, and **
 - Expo Router (file-based routing)  
 - Google Gemini API  
 - SERP API  
-- Secure environment variable handling  
+- Secure environment variable handling
+- Node.js and Express for Backend
+- Postgres for DB
 
 ---
 
