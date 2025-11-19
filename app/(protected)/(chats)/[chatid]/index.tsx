@@ -1,30 +1,3 @@
-// import { useLocalSearchParams } from 'expo-router';
-// import React, { useState } from 'react';
-// import { Text, View } from 'react-native';
-
-// export default function Index() {
-//   const { chatid } = useLocalSearchParams<{ chatid: string }>();
-
-//  const [chats] = useState([
-//   { 
-//     id: '1', 
-//     name: 'Iphone 17', 
-//     review: "The iPhone 17 is widely praised as Apple's best standard iPhone in years, bringing features that used to be exclusive to the Pro models. It has a larger 6.3-inch Super Retina XDR OLED display with 120Hz ProMotion and Always-On functionality, delivering crisp and vibrant visuals with smooth scrolling. Powered by the A19 chip and 8GB RAM, it offers fast performance for everyday tasks, AI-enhanced photo processing, and improved wireless connectivity. The base storage starts at 256GB, doubling last year's entry level. The highlight of the iPhone 17 is its revamped camera system, especially the new 18MP 'Center Stage' front camera with a square sensor. This allows wide landscape-style selfies even when holding the phone vertically and supports dynamic group selfies by automatically adjusting the frame to fit multiple people. The rear camera setup features a 48MP Dual Fusion system with 2x optical telephoto and ultra-wide macro capabilities. Dual Capture mode lets users record front and rear cameras simultaneously, great for content creators and vlogging. In daily use, the iPhone 17 offers all-day battery life with up to 8 more hours of video playback compared to the previous generation. It has a sturdy Ceramic Shield 2 with better scratch resistance and retains IP68 water resistance. While gaming on the highest settings can cause some overheating due to the lack of specialized cooling seen in Pro models, the phone balances performance and comfort well. It is available in fresh colors like Sage, Mist Blue, and Lavender, making it a compelling and well-rounded choice for most users."
-//   },
-//   { 
-//     id: '2', 
-//     name: 'sony xm5 headphones', 
-//     review: "The Sony WH-1000XM5 headphones represent a significant redesign with best-in-class active noise cancellation that outperforms competitors like Bose and even their predecessor, the XM4. With eight total microphones (four for ANC, four for voice calls), they excel at blocking out ambient noise from plane engines to office chatter, making them ideal for travel and noisy environments. The adaptive ANC automatically optimizes performance based on your surroundings, though proper fit is crucial for maximum effectiveness. Sound quality is impressive with sensational clarity, punchy delivery, and precise bass, though the stock tuning may need EQ adjustments for audiophile listeners who prefer a more neutral sound. The headphones feature a comfortable lightweight design perfect for long listening sessions, delivering 30 hours of battery life with ANC enabled (40 hours without). Quick charging provides 3 hours of playback from just 3 minutes of charging. The standout improvement is voice call quality—AI-powered noise reduction with four beamforming microphones makes calls crystal clear even in noisy streets with traffic and wind. The XM5 supports multipoint Bluetooth pairing for connecting two devices simultaneously, has intuitive touch controls on the right ear cup, and includes features like Speak-to-Chat and Quick Attention mode. While the new single-hinge design means they don't fold as compactly as the XM4, and some users report hinge material peeling over time, these remain the gold standard for wireless noise-cancelling headphones with an excellent balance of comfort, sound quality, and smart features."
-//   },
-// ]);
-
-  
-//   return (
-//     <View style={{display:'flex', flex:1, backgroundColor:'#191a1a', padding:16}}>
-//       <Text style={{color:'white'}}>{chats[Number(chatid)].review}</Text>
-//     </View>
-//   )
-// }
 import { ExternalLink } from '@/components/external-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
