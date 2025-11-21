@@ -135,7 +135,7 @@ export default function ChatScreen() {
       console.log('🤖 Calling AI API for:', textToSend);
       
       // Call your REAL API
-      const res = await fetch('http://192.168.2.117:5000/api/ask', {
+      const res = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: textToSend }),

@@ -4,7 +4,7 @@ import { Colors } from '@/constants/theme';
 import { AuthContext } from '@/contexts/authContext';
 import { useColorScheme } from '@/hooks/use-color-scheme.web';
 import * as Haptics from 'expo-haptics';
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -22,20 +22,32 @@ const AuthPage = () => {
   const colorScheme = useColorScheme();
   const authState = useContext(AuthContext);
 
-  const handleLogin = () => {
+  // Local state for form fields and mode
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleLogin = async () => {
+    setLoading(true);
+    setError(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    authState.logIn();
-    // Your login logic here
+    try {
+      await authState.logIn(email, password);
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
+    }
+    setLoading(false);
   };
 
   const handleGoogleSignIn = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // Your Google sign-in logic here
+    // Your Google sign-in logic here (use Supabase OAuth)
   };
 
   const handleAppleSignIn = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // Your Apple sign-in logic here
+    // Your Apple sign-in logic here (use Supabase OAuth)
   };
 
   return (
@@ -49,13 +61,36 @@ const AuthPage = () => {
           <ThemedView style={styles.container}>
             <ThemedText type="title">ProView</ThemedText>
             <SafeAreaView style={styles.inputContainer}>
-              <TextInput value="" id="username" placeholder="Email" style={styles.inputField} />
-              <TextInput value="" id="password" placeholder="Password" secureTextEntry style={styles.inputField} />
+              <TextInput
+                value={email}
+                onChangeText={setEmail}
+                placeholder="Email"
+                style={styles.inputField}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+              />
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Password"
+                style={styles.inputField}
+                secureTextEntry
+                autoCapitalize="none"
+                autoComplete="password"
+              />
+
+              {error && <Text style={{ color: 'red', marginVertical: 8 }}>{error}</Text>}
+
+              {/* Login/Register Button */}
               <TouchableOpacity
                 onPress={handleLogin}
                 style={[{ backgroundColor: Colors[colorScheme ?? 'light'].tint }, styles.loginButton]}
+                disabled={loading}
               >
-                <Text style={{ color: Colors[colorScheme ?? 'light'].background }}>Login</Text>
+                <Text style={{ color: Colors[colorScheme ?? 'light'].background }}>
+                  {'Login'}
+                </Text>
               </TouchableOpacity>
 
               {/* Social Login Buttons */}
