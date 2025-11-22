@@ -80,7 +80,7 @@ function CustomDrawerContent(props: any) {
         activeTintColor={Colors[colorScheme ?? 'light'].tint}
         inactiveTintColor={Colors[colorScheme ?? 'light'].text}
         focused={currentRoute.name === 'profile'}
-        style={{ borderRadius: 0, paddingBottom: 30, paddingTop: 15, backgroundColor: '#272929ff' }}
+        style={{ borderRadius: 0, paddingBottom: 30, paddingTop: 15, backgroundColor:Colors[ colorScheme ?? 'light' ].backgroundDark }}
       />
     </ThemedView>
   );

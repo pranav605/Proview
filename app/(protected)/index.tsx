@@ -129,7 +129,7 @@ export default function Index() {
                         style={styles.productItem}
                         onPress={() => handleProductClick(item.name)}
                       >
-                        <Text style={styles.productText}>
+                        <Text style={[styles.productText, { color: Colors[colorScheme ?? 'light'].text }, {backgroundColor:Colors[ colorScheme ?? 'light' ].background}]}>
                           {item.name}
                         </Text>
                       </Pressable>
@@ -141,7 +141,7 @@ export default function Index() {
               {/* Foreground Proview Text */}
               <TypeWriter
                 typing={1}
-                style={styles.proviewText}
+                style={[styles.proviewText, {color:Colors[ colorScheme ?? 'light' ].text}]}
                 minDelay={20}
                 maxDelay={60}
               >
@@ -158,7 +158,7 @@ export default function Index() {
                     onChangeText={setQuery}
                     placeholder="What are you looking for..."
                     placeholderTextColor="#888"
-                    style={[styles.input, { color: Colors[colorScheme ?? 'light'].text }]}
+                    style={[styles.input, { color: Colors[colorScheme ?? 'light'].text }, {backgroundColor:Colors[ colorScheme ?? 'light' ].background}]}
                     returnKeyType="send"
                     onSubmitEditing={handleSend}
                     onContentSizeChange={handleContentSizeChange}
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   productText: { color: '#e8e8e3', fontSize: 12 },
   proviewText: { color: '#fff', fontSize: 48, fontWeight: 'bold', textAlign: 'center', zIndex: 2 },
   inputWrapper: { position: 'absolute', bottom: 20, left: 10, right: 10, justifyContent: 'flex-end' },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#3d3f3e', borderRadius: 25, backgroundColor: '#1f2121', paddingHorizontal: 12, paddingVertical: 6, minHeight: 50 },
+  inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#3d3f3e', borderRadius: 25, paddingHorizontal: 12, paddingVertical: 6, minHeight: 50 },
   row: { flex: 1, flexDirection: 'row', alignItems: 'flex-end' },
   input: { flex: 1, paddingHorizontal: 12, paddingVertical: 8, textAlignVertical: 'top', fontSize: 16, maxHeight: 150 },
   button: { width: 38, height: 38, borderRadius: 100, alignItems: 'center', justifyContent: 'center', marginLeft: 6 },

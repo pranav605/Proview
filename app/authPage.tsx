@@ -24,6 +24,7 @@ const AuthPage = () => {
   const authState = useContext(AuthContext);
   const google = require('../assets/images/google.png');
   const apple = require('../assets/images/apple.png');
+  const apple_white = require('../assets/images/apple-white.png');
   const parrot = require('../assets/images/parrot.png');
 
   // Local state for form fields and mode
@@ -72,7 +73,7 @@ const AuthPage = () => {
                 value={email}
                 onChangeText={setEmail}
                 placeholder="Email"
-                style={styles.inputField}
+                style={[styles.inputField, {color:Colors[ colorScheme ?? 'light' ].text}, {backgroundColor:Colors[ colorScheme ?? 'light' ].background}]}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
@@ -81,7 +82,7 @@ const AuthPage = () => {
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Password"
-                style={styles.inputField}
+                style={[styles.inputField, {color:Colors[ colorScheme ?? 'light' ].text}, {backgroundColor:Colors[ colorScheme ?? 'light' ].background}]}
                 secureTextEntry
                 autoCapitalize="none"
                 autoComplete="password"
@@ -107,14 +108,14 @@ const AuthPage = () => {
                   style={[styles.socialButton, { backgroundColor: colorScheme == 'light' ? '#000000' : '#ffffff' }]}
                 >
                   <Image source={ google } style={styles.icon} />
-                  <Text style={styles.socialButtonText}>Sign in with Google</Text>
+                  <Text style={[styles.socialButtonText, {color:Colors[ colorScheme ?? 'light' ].background}]}>Sign in with Google</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleAppleSignIn}
                   style={[styles.socialButton, { backgroundColor: colorScheme == 'light' ? '#000000' : '#ffffff' }]}
                 >
-                  <Image source={apple} style={styles.icon} />
-                  <Text style={styles.socialButtonText}>Sign in with Apple</Text>
+                  <Image source={ colorScheme === 'light' ? apple_white : apple} style={styles.icon} />
+                  <Text style={[styles.socialButtonText, {color:Colors[ colorScheme ?? 'light' ].background}]}>Sign in with Apple</Text>
                 </TouchableOpacity>
               </View>
             </SafeAreaView>
@@ -149,9 +150,8 @@ const styles = StyleSheet.create({
     height: 50,
     padding: 8,
     borderWidth: 1,
-    borderColor: '#3d3f3e',
-    borderRadius: 25,
-    backgroundColor: '#1f2121',
+    borderColor: '#3d3f3e94',
+    borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
     minHeight: 50,
@@ -176,14 +176,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 4
+    gap: 8
   },
   socialButtonText: {
     fontWeight: 'bold',
   },
   icon: {
-    maxHeight: 25,
-    maxWidth: 25,
+    maxHeight: 16,
+    maxWidth: 16,
   },
   title: {
     flexDirection: 'row'

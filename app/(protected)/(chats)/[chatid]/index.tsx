@@ -4,7 +4,6 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLocalSearchParams } from 'expo-router';
-import { SendHorizonal } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -15,9 +14,7 @@ import {
   Platform,
   StyleSheet,
   Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import TypeWriter from 'react-native-typewriter';
 
@@ -241,7 +238,7 @@ export default function ChatScreen() {
               {showReferences && isLastAiMessage && renderReferences(item.searchData)}
             </>
           ) : (
-            <Text style={styles.messageText}>{item.text}</Text>
+            <Text style={[styles.messageText, { color: Colors[colorScheme ?? 'light'].text }]}>{item.text}</Text>
           )}
         </View>
       </MotiView>
@@ -279,7 +276,7 @@ export default function ChatScreen() {
 
         {/* Input Bar */}
         <View style={styles.inputWrapper}>
-          <Animated.View style={[
+          {/* <Animated.View style={[
             styles.inputContainer,
             { 
               height: animatedHeight,
@@ -315,7 +312,7 @@ export default function ChatScreen() {
                 )}
               </TouchableOpacity>
             </View>
-          </Animated.View>
+          </Animated.View> */}
         </View>
       </KeyboardAvoidingView>
     </ThemedView>
@@ -341,7 +338,7 @@ const styles = StyleSheet.create({
   bubble: { maxWidth: '100%', paddingVertical: 10, paddingHorizontal: 14, borderRadius: 20 },
   userBubble: { backgroundColor: '#303030', maxWidth: '75%' },
   aiBubble: { width: '100%', textAlign: 'justify' },
-  messageText: { fontSize: 16, color: '#e8e8e3' },
+  messageText: { fontSize: 16 },
   referencesWrapper: { flexDirection: "row", flexWrap: "wrap", marginTop: 8, gap: 8 },
   referenceItem: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, backgroundColor: "#404040" },
   flatListContent: { paddingVertical: 16, paddingBottom: 120, flexGrow: 1 },
