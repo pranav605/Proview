@@ -25,7 +25,7 @@ const AuthPage = () => {
   const google = require('../assets/images/google.png');
   const apple = require('../assets/images/apple.png');
   const apple_white = require('../assets/images/apple-white.png');
-  const parrot = require('../assets/images/parrot.png');
+  const logo = require('../assets/images/logo.png');
 
   // Local state for form fields and mode
   const [email, setEmail] = useState('');
@@ -65,7 +65,7 @@ const AuthPage = () => {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <ThemedView style={styles.container}>
             <ThemedView style={styles.title}>
-              <Image source={ parrot } style={styles.icon} />
+              <Image source={ logo } style={styles.heroIcon} />
               <ThemedText type="title">ProView</ThemedText>
             </ThemedView>
             <SafeAreaView style={styles.inputContainer}>
@@ -185,7 +185,13 @@ const styles = StyleSheet.create({
     maxHeight: 16,
     maxWidth: 16,
   },
+  heroIcon:{
+    height:64,
+    width: 64
+  },
   title: {
-    flexDirection: 'row'
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap:20,
   }
 });

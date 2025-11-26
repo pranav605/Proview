@@ -97,7 +97,7 @@ function DrawerNavigator() {
         screenOptions={{
           drawerStyle: {
             backgroundColor: Colors[colorScheme ?? 'light'].background,
-            width: 240,
+            width: 250,
           },
           headerStyle: {
             backgroundColor: Colors[colorScheme ?? 'light'].background,
@@ -105,7 +105,7 @@ function DrawerNavigator() {
           headerTintColor: Colors[colorScheme ?? 'light'].text,
           drawerItemStyle: {
             borderRadius: 4,
-          }
+          },
         }}
       >
         <Drawer.Screen

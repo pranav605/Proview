@@ -7,22 +7,29 @@ SplashScreen.preventAutoHideAsync();
 type AuthState = {
   isReady: boolean;
   isLoggedIn: boolean;
+  hasCompletedOnboarding: boolean;
   logIn: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   logOut: () => Promise<void>;
+  completeOnboarding: () => Promise<void>;
+  resetOnboarding: () => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthState>({
   isReady: false,
   isLoggedIn: false,
+  hasCompletedOnboarding: false,
   logIn: async () => {},
   register: async () => {},
   logOut: async () => {},
+  completeOnboarding: async () => {},
+  resetOnboarding: async () => {},
 });
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const router = useRouter();
 
   // Listen to auth state changes
@@ -71,6 +78,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
     router.replace("/authPage");
   };
 
+  const completeOnboarding = async () => {
+    setHasCompletedOnboarding(true);
+    router.replace("/authPage");
+  }
+
+  const resetOnboarding = async () => {
+    setHasCompletedOnboarding(false);
+    router.replace("/")
+  }
+
   useEffect(() => {
     if (isReady) {
       SplashScreen.hideAsync();
@@ -78,7 +95,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [isReady]);
 
   return (
-    <AuthContext.Provider value={{ isReady, isLoggedIn, logIn, register, logOut }}>
+    <AuthContext.Provider value={{ isReady, isLoggedIn, hasCompletedOnboarding, logIn, register, logOut, completeOnboarding, resetOnboarding }}>
       {children}
     </AuthContext.Provider>
   );

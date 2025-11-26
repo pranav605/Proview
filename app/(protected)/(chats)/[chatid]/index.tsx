@@ -4,6 +4,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLocalSearchParams } from 'expo-router';
+import { SendHorizonal } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -14,6 +15,7 @@ import {
   Platform,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View
 } from 'react-native';
 import TypeWriter from 'react-native-typewriter';
@@ -45,6 +47,7 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(false);
   const [showReferences, setShowReferences] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [error, setError] = useState(false);
   const animatedHeight = useRef(new Animated.Value(50)).current;
   const flatListRef = useRef<FlatList>(null);
   
@@ -125,6 +128,7 @@ export default function ChatScreen() {
     // const userMessage: Message = { role: 'user', text: textToSend };
     // setMessages((prev) => [...prev, userMessage]);
     setQuery('');
+    setMessages([]);
     setLoading(true);
     setShowReferences(false);
 
@@ -145,7 +149,7 @@ export default function ChatScreen() {
         searchData: data.searchData,
       };
       
-      setMessages((prev) => [...prev, aiMessage]);
+      setMessages((prev) => [aiMessage]);
 
       // Save to simulated database (in-memory storage)
       saveMessagesToDatabase([aiMessage]);
@@ -154,13 +158,15 @@ export default function ChatScreen() {
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
+      setError(false);
     } catch (err) {
       console.error(err);
       const errorMessage: Message = { 
         role: 'ai', 
         text: '⚠️ Something went wrong. Try again.' 
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) => [errorMessage]);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -230,7 +236,7 @@ export default function ChatScreen() {
                 typing={1}
                 minDelay={1}
                 maxDelay={1}
-                style={styles.messageText}
+                style={[styles.messageText, { color: Colors[colorScheme ?? 'light'].text }]}
                 onTypingEnd={() => isLastAiMessage && setShowReferences(true)}
               >
                 {item.text}
@@ -313,6 +319,22 @@ export default function ChatScreen() {
               </TouchableOpacity>
             </View>
           </Animated.View> */}
+          {
+            error && <TouchableOpacity 
+                style={styles.button} 
+                onPress={() => handleSendMessage(initialQuery)}
+                disabled={loading || !initialQuery.trim()}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color={Colors[colorScheme ?? 'light'].tint} />
+                ) : (
+                  <SendHorizonal
+                    color={query.trim() ? Colors[colorScheme ?? 'light'].tint : '#888'}
+                    size={22}
+                  />
+                )}
+              </TouchableOpacity>
+          }
         </View>
       </KeyboardAvoidingView>
     </ThemedView>

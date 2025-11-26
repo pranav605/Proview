@@ -1,7 +1,7 @@
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { MessagesSquare } from 'lucide-react-native';
 import React, { useEffect } from 'react';
 import { TouchableOpacity } from 'react-native';
@@ -11,6 +11,7 @@ import ThreadScreen from './thread';
 const Tab = createMaterialTopTabNavigator();
 
 export default function ChatTabsLayout() {
+  const navigator = useNavigation();
   const router = useRouter();
   const colorScheme = useColorScheme();
   const params = useLocalSearchParams<{ 
