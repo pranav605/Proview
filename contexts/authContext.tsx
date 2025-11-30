@@ -9,7 +9,7 @@ type AuthState = {
   isLoggedIn: boolean;
   hasCompletedOnboarding: boolean;
   logIn: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, name: string, image: string) => Promise<void>;
   logOut: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
   resetOnboarding: () => Promise<void>;
@@ -19,11 +19,11 @@ export const AuthContext = createContext<AuthState>({
   isReady: false,
   isLoggedIn: false,
   hasCompletedOnboarding: false,
-  logIn: async () => {},
-  register: async () => {},
-  logOut: async () => {},
-  completeOnboarding: async () => {},
-  resetOnboarding: async () => {},
+  logIn: async () => { },
+  register: async () => { },
+  logOut: async () => { },
+  completeOnboarding: async () => { },
+  resetOnboarding: async () => { },
 });
 
 export function AuthProvider({ children }: PropsWithChildren) {
@@ -61,16 +61,39 @@ export function AuthProvider({ children }: PropsWithChildren) {
     router.replace("/");
   };
 
-  const register = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
+  const register = async (email: string, password: string, name: string, image: string) => {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+
     if (error) {
       console.log("Registration error:", error.message);
       // TODO: Show user error feedback
       return;
     }
+
+    const user = data?.user;
+    if (!user) {
+      console.log("No user returned from signUp");
+      return;
+    }
+
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: user.id,
+        name: name,
+        image: image,
+      });
+
+    if (profileError) {
+      console.log("Error inserting profile:", profileError.message);
+      // TODO: Handle profile insert error
+      return;
+    }
+
     setIsLoggedIn(true);
     router.replace("/");
   };
+
 
   const logOut = async () => {
     await supabase.auth.signOut();

@@ -1,26 +1,337 @@
+// OnboardingScreen.tsx
+import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { Colors } from "@/constants/theme";
 import { AuthContext } from "@/contexts/authContext";
-import { Link } from "expo-router";
-import { useContext } from "react";
-import { Button, StyleSheet } from "react-native";
+import { useColorScheme } from "@/hooks/use-color-scheme.web";
+import * as Haptics from "expo-haptics";
+import * as ImagePicker from 'expo-image-picker';
+import { Smile } from "lucide-react-native";
+import { useContext, useRef, useState } from "react";
+import {
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    StyleSheet,
+    TextInput,
+    View
+} from "react-native";
+const TOTAL_STEPS = 4;
 
-export default function OnboardingFirstScreen(){
+export default function OnboardingScreen() {
+    const [step, setStep] = useState(1);
     const authContext = useContext(AuthContext);
+    const colorScheme = useColorScheme();
+    const [authFields, setAuthFields] = useState({
+        email: "",
+        password: "",
+    });
+    const [profileFields, setProfileFields] = useState({
+        name: "",
+        image: "",
+    });
+    const [imageUri, setImageUri] = useState(null);
+
+    const pickImage = async () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        // Ask for permission to access media library
+        if (Platform.OS !== 'web') {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                alert('Sorry, we need camera roll permissions to make this work!');
+                return;
+            }
+        }
+
+        // Launch image picker
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1], // square crop for profile image
+            quality: 1,
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            const pickedUri = result.assets[0].uri;
+            setProfileFields((p) => ({ ...p, image: pickedUri }));
+        }
+
+    };
+
+    const goNext = () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        if (step < TOTAL_STEPS) setStep(step + 1);
+        else {
+            authContext.completeOnboarding();
+        }
+    };
+
+    const goBack = () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (step > 1) setStep(step - 1);
+    };
+
+    const progress = step / TOTAL_STEPS;
+    const passwordInputRef = useRef(null);
     return (
-        <ThemedView style={styles.container}>
-            <ThemedText type='title'>Welcome to ProView</ThemedText>
-            <Link asChild push href={'/onboarding/final'} >
-                <Button title="Continue ->"/>
-            </Link>
-        </ThemedView>
-    )
+        <KeyboardAvoidingView
+            style={{ flex: 1, backgroundColor: Colors[colorScheme ?? 'light'].background }}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            // account for status bar + progress bar height
+            keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        >
+            <ThemedView style={styles.container}>
+                {/* Progress bar (overlaid on top) */}
+                <View style={styles.progressContainer}>
+                    <View style={styles.progressTrack}>
+                        <View
+                            style={[
+                                { backgroundColor: Colors[colorScheme ?? "light"].tint },
+                                { flex: progress },
+                            ]}
+                        />
+                        <View style={{ flex: 1 - progress }} />
+                    </View>
+                    <ThemedText style={styles.stepText}>
+                        Step {step} / {TOTAL_STEPS}
+                    </ThemedText>
+                </View>
+
+                <ParallaxScrollView
+                    headerBackgroundColor={{ light: "#D0D0D0", dark: "#353636" }}
+                    headerImage={step === 2 && profileFields.image ? (
+                        <Image
+                            source={{ uri: profileFields.image }}
+                            style={{ width: 192, height: 192, borderRadius: 48 }}
+                        />
+                    ) : (
+                        <Smile size={96} />
+                    )}
+                >
+                    {/* STEP 1 */}
+                    {step === 1 && (
+                        <View style={styles.content}>
+                            <ThemedText type="title">Welcome to ProView</ThemedText>
+                            <ThemedText>
+                                Get quick, AI-assisted summaries of product reviews so you can
+                                decide faster.
+                            </ThemedText>
+                        </View>
+                    )}
+
+                    {/* STEP 2 (form) */}
+                    {step === 2 && (
+                        <View style={styles.content}>
+                            <ThemedText type="title">Tell us about you</ThemedText>
+                            <ThemedText>
+                                Give us your full name and select a picture with your widest
+                                smile.
+                            </ThemedText>
+
+                            <TextInput
+                                value={profileFields.name}
+                                onChangeText={(text) =>
+                                    setProfileFields((p) => ({ ...p, name: text }))
+                                }
+                                placeholder="Name"
+                                style={[
+                                    styles.inputField,
+                                    { color: Colors[colorScheme ?? "light"].text },
+                                    {
+                                        backgroundColor:
+                                            Colors[colorScheme ?? "light"].background,
+                                    },
+                                ]}
+                                keyboardType="name-phone-pad"
+                                autoCapitalize="none"
+                                autoComplete="name"
+                            />
+                            <Pressable
+                                onPress={pickImage}
+                                style={[
+                                    styles.inputField,
+                                    styles.imagePickerButton,
+                                    { backgroundColor: Colors[colorScheme ?? "light"].background },
+                                ]}
+                            >
+                                <ThemedText style={{ color: Colors[colorScheme ?? "light"].text, textAlign: "center" }}>
+                                    {profileFields.image ? "Change image" : "Upload an image"}
+                                </ThemedText>
+                            </Pressable>
+                        </View>
+                    )}
+
+                    {/* STEP 3 */}
+                    {step === 3 && (
+                        <View style={styles.content}>
+                            <ThemedText type="title">Create a user account</ThemedText>
+                            <ThemedText>
+                                Register with a email and password, make sure you use a strong password
+                                that you will remember
+                            </ThemedText>
+
+                            <TextInput
+                                value={authFields.email}
+                                onChangeText={(text) =>
+                                    setAuthFields((p) => ({ ...p, email: text }))
+                                }
+                                placeholder="Email"
+                                style={[
+                                    styles.inputField,
+                                    { color: Colors[colorScheme ?? "light"].text },
+                                    {
+                                        backgroundColor:
+                                            Colors[colorScheme ?? "light"].background,
+                                    },
+                                ]}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                autoComplete="email"
+                                returnKeyType="next"
+                                onSubmitEditing={() => {
+                                    // Focus on the password input when Next is pressed
+                                    passwordInputRef.current?.focus();
+                                }}
+                                // you can add blurOnSubmit=false to avoid keyboard closing on submit
+                                blurOnSubmit={false}
+                            />
+                            <TextInput
+                                value={authFields.password}
+                                onChangeText={(text) =>
+                                    setAuthFields((p) => ({ ...p, password: text }))
+                                }
+                                placeholder="Password"
+                                style={[
+                                    styles.inputField,
+                                    { color: Colors[colorScheme ?? "light"].text },
+                                    {
+                                        backgroundColor:
+                                            Colors[colorScheme ?? "light"].background,
+                                    },
+                                ]}
+                                secureTextEntry
+                                autoCapitalize="none"
+                                autoComplete="password"
+                                ref={passwordInputRef}
+                            />
+                        </View>
+                    )}
+
+                    {/* STEP 4 */}
+                    {step === 4 && (
+                        <View style={styles.content}>
+                            <ThemedText type="title">Check you email inbox</ThemedText>
+                            <ThemedText>
+                                We have sent you and email, open it and click on the link to 
+                                activate the account.
+                            </ThemedText>
+                        </View>
+                    )}
+
+                    {/* Bottom buttons */}
+                    <View style={styles.footer}>
+                        {step > 1 && (
+                            <Pressable
+                                onPress={goBack}
+                                style={[
+                                    styles.button,
+                                    { backgroundColor: Colors[colorScheme ?? "light"].backgroundDark },
+                                ]}
+                            >
+                                <ThemedText style={styles.buttonText}>Back</ThemedText>
+                            </Pressable>
+                        )}
+                        <Pressable
+                            onPress={goNext}
+                            style={[
+                                { backgroundColor: Colors[colorScheme ?? "light"].tint },
+                                styles.button,
+                            ]}
+                        >
+                            <ThemedText style={styles.buttonText}>
+                                {step === TOTAL_STEPS ? "Finish" : "Continue"}
+                            </ThemedText>
+                        </Pressable>
+                    </View>
+                </ParallaxScrollView>
+            </ThemedView>
+        </KeyboardAvoidingView>
+    );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    }
-})
+    },
+    progressContainer: {
+        position: "absolute",
+        top: 60,
+        width: "100%",
+        paddingHorizontal: 16,
+        zIndex: 10,
+    },
+    progressTrack: {
+        flexDirection: "row",
+        height: 4,
+        borderRadius: 4,
+        backgroundColor: "#E2E4EA",
+        overflow: "hidden",
+    },
+    stepText: {
+        marginTop: 8,
+    },
+    content: {
+        justifyContent: "center",
+        gap: 8,
+    },
+    footer: {
+        flexDirection: "row",
+        justifyContent: "flex-end",
+        gap: 12,
+        marginTop: 32,
+        marginBottom: 32,
+    },
+    button: {
+        paddingHorizontal: 24,
+        paddingVertical: 14,
+        borderRadius: 999,
+    },
+    buttonText: {
+        color: "#ffffff",
+        fontWeight: "600",
+    },
+    inputField: {
+        width: "100%",
+        height: 50,
+        padding: 8,
+        borderWidth: 1,
+        borderColor: "#3d3f3e94",
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        minHeight: 50,
+    },
+    imagePickerButton: {
+        justifyContent: "center",
+        alignItems: "center",
+        height: 50, // same height as inputs
+        borderColor: "#3d3f3e94",
+        borderWidth: 1,
+        borderRadius: 8,
+        marginTop: 8,
+        marginBottom: 4,
+    },
+
+    imagePreview: {
+        width: 50,
+        height: 50,
+        borderRadius: 8,
+        borderColor: "#3d3f3e94",
+        borderWidth: 1,
+        marginTop: 4,
+        alignSelf: "center",
+    },
+
+});
