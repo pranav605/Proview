@@ -1,15 +1,21 @@
 import { SplashScreen, useRouter } from "expo-router";
 import { createContext, PropsWithChildren, useEffect, useState } from "react";
-import { supabase } from "../utils/supabaseClient"; // update path as needed
+import { supabase } from "../utils/supabaseClient";
+
 
 SplashScreen.preventAutoHideAsync();
+
+type RegisterResult =
+  | { success: boolean }
+  | { success: boolean; message: string };
+
 
 type AuthState = {
   isReady: boolean;
   isLoggedIn: boolean;
   hasCompletedOnboarding: boolean;
   logIn: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string, image: string) => Promise<void>;
+  register: (email: string, password: string, name: string, image: string, imageType: string) => Promise<RegisterResult>;
   logOut: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
   resetOnboarding: () => Promise<void>;
@@ -20,7 +26,7 @@ export const AuthContext = createContext<AuthState>({
   isLoggedIn: false,
   hasCompletedOnboarding: false,
   logIn: async () => { },
-  register: async () => { },
+  register: async () => ({ success: false, message: 'Not implemented' }),
   logOut: async () => { },
   completeOnboarding: async () => { },
   resetOnboarding: async () => { },
@@ -61,38 +67,55 @@ export function AuthProvider({ children }: PropsWithChildren) {
     router.replace("/");
   };
 
-  const register = async (email: string, password: string, name: string, image: string) => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+  const register = async (email: string, password: string, name: string, image: string, imageType: string) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
 
-    if (error) {
-      console.log("Registration error:", error.message);
-      // TODO: Show user error feedback
-      return;
+      const user = data?.user;
+      if (!user) throw new Error("No user returned from signUp");
+
+      // Read the file as base64
+      // const file = new FileSystem.File(image);
+      // let base64 = '';
+      // file.base64().then((base)=>{
+      //   base64= base;
+      // })
+
+      // // Define unique file path
+      // const fileExt = image.split('.').pop() || 'jpg';
+      // const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+      // const filePath = `profile-images/${fileName}`;
+
+      // // Upload using Supabase Storage from base64 buffer
+      // const { error: uploadError } = await supabase.storage
+      //   .from('profile-images')
+      //   .upload(filePath, base64, {
+      //     cacheControl: '3600',
+      //     upsert: false,
+      //     contentType: imageType || 'image/jpeg',
+      //   });
+
+      // if (uploadError) throw uploadError;
+
+      // const { error: profileError } = await supabase
+      //   .from('profiles')
+      //   .insert({
+      //     id: user.id,
+      //     name: name,
+      //     image: filePath, // Save path, not the local image URI
+      //   });
+
+      // if (profileError) throw profileError;
+
+      return { success: true };
+    } catch (err: any) {
+      console.error("Registration error:", err.message);
+      return { success: false, message: err.message };
     }
-
-    const user = data?.user;
-    if (!user) {
-      console.log("No user returned from signUp");
-      return;
-    }
-
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        id: user.id,
-        name: name,
-        image: image,
-      });
-
-    if (profileError) {
-      console.log("Error inserting profile:", profileError.message);
-      // TODO: Handle profile insert error
-      return;
-    }
-
-    setIsLoggedIn(true);
-    router.replace("/");
+    
   };
+
 
 
   const logOut = async () => {

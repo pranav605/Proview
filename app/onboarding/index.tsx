@@ -5,11 +5,14 @@ import { ThemedView } from "@/components/themed-view";
 import { Colors } from "@/constants/theme";
 import { AuthContext } from "@/contexts/authContext";
 import { useColorScheme } from "@/hooks/use-color-scheme.web";
+import { supabase } from "@/utils/supabaseClient";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from 'expo-image-picker';
-import { Smile } from "lucide-react-native";
-import { useContext, useRef, useState } from "react";
+import { useRouter } from "expo-router";
+import { CheckCircle, Eye, EyeOff, Smile } from "lucide-react-native";
+import { useContext, useEffect, useRef, useState } from "react";
 import {
+    ActivityIndicator,
     Image,
     KeyboardAvoidingView,
     Platform,
@@ -22,6 +25,7 @@ const TOTAL_STEPS = 4;
 
 export default function OnboardingScreen() {
     const [step, setStep] = useState(1);
+    const router = useRouter();
     const authContext = useContext(AuthContext);
     const colorScheme = useColorScheme();
     const [authFields, setAuthFields] = useState({
@@ -31,7 +35,9 @@ export default function OnboardingScreen() {
     const [profileFields, setProfileFields] = useState({
         name: "",
         image: "",
+        imageType: "",
     });
+    const [showPassword, setShowPassword] = useState(false);
     const [imageUri, setImageUri] = useState(null);
 
     const pickImage = async () => {
@@ -47,7 +53,7 @@ export default function OnboardingScreen() {
 
         // Launch image picker
         let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: 'images',
             allowsEditing: true,
             aspect: [1, 1], // square crop for profile image
             quality: 1,
@@ -55,7 +61,7 @@ export default function OnboardingScreen() {
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
             const pickedUri = result.assets[0].uri;
-            setProfileFields((p) => ({ ...p, image: pickedUri }));
+            setProfileFields((p) => ({ ...p, image: pickedUri, imageType: result.assets[0].type || 'image/jpeg' }));
         }
 
     };
@@ -72,6 +78,48 @@ export default function OnboardingScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         if (step > 1) setStep(step - 1);
     };
+
+    const [isChecking, setIsChecking] = useState(true);
+    const [verified, setVerified] = useState(false);
+
+    useEffect(() => {
+        let interval: ReturnType<typeof setInterval>;
+        if (step === 4) {
+            interval = setInterval(async () => {
+                const { data: { user }, error } = await supabase.auth.getUser();
+                if (error) {
+                    console.error("User verify check error:", error);
+                    return;
+                }
+                if (user?.email_confirmed_at) {
+                    setVerified(true);
+                    setIsChecking(false);
+                    clearInterval(interval);
+
+                    // Redirect after short delay to let user see the check
+                    setTimeout(() => {
+                        // Your redirect logic, e.g.:
+                        router.replace("/login"); // or authContext.logIn(...);
+                    }, 1500);
+                }
+            }, 3000); // every 3 seconds
+
+            return () => clearInterval(interval);
+        }
+    }, [step]);
+
+    const callRegister = () => {
+        const register = async () => {
+            const result = await authContext.register(authFields.email, authFields.password, profileFields.name, profileFields.image, profileFields.imageType);
+            if (!result.success) {
+                alert(`Registration failed: ${result.message}`);
+            } else {
+                // success flow
+                goNext();
+            }
+        }
+        register();
+    }
 
     const progress = step / TOTAL_STEPS;
     const passwordInputRef = useRef(null);
@@ -197,38 +245,73 @@ export default function OnboardingScreen() {
                                 // you can add blurOnSubmit=false to avoid keyboard closing on submit
                                 blurOnSubmit={false}
                             />
-                            <TextInput
-                                value={authFields.password}
-                                onChangeText={(text) =>
-                                    setAuthFields((p) => ({ ...p, password: text }))
-                                }
-                                placeholder="Password"
-                                style={[
-                                    styles.inputField,
-                                    { color: Colors[colorScheme ?? "light"].text },
-                                    {
-                                        backgroundColor:
-                                            Colors[colorScheme ?? "light"].background,
-                                    },
-                                ]}
-                                secureTextEntry
-                                autoCapitalize="none"
-                                autoComplete="password"
-                                ref={passwordInputRef}
-                            />
+                            <View style={{ position: "relative", width: "100%" }}>
+                                <TextInput
+                                    value={authFields.password}
+                                    onChangeText={(text) =>
+                                        setAuthFields((p) => ({ ...p, password: text }))
+                                    }
+                                    placeholder="Password"
+                                    style={[
+                                        styles.inputField,
+                                        {
+                                            color: Colors[colorScheme ?? "light"].text,
+                                            backgroundColor: Colors[colorScheme ?? "light"].background,
+                                            paddingRight: 40, // space for the icon
+                                        },
+                                    ]}
+                                    secureTextEntry={!showPassword}
+                                    autoCapitalize="none"
+                                    autoComplete="password"
+                                    ref={passwordInputRef}
+                                />
+
+                                <Pressable
+                                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowPassword((prev) => !prev) }}
+                                    style={{
+                                        position: "absolute",
+                                        right: 12,
+                                        top: 0,
+                                        bottom: 0,
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                    }}
+                                    hitSlop={8}
+                                >
+                                    {showPassword ? (
+                                        <EyeOff size={20} color={Colors[colorScheme ?? "light"].text} />
+                                    ) : (
+                                        <Eye size={20} color={Colors[colorScheme ?? "light"].text} />
+                                    )}
+                                </Pressable>
+                            </View>
+
                         </View>
                     )}
 
                     {/* STEP 4 */}
                     {step === 4 && (
                         <View style={styles.content}>
-                            <ThemedText type="title">Check you email inbox</ThemedText>
-                            <ThemedText>
-                                We have sent you and email, open it and click on the link to 
-                                activate the account.
-                            </ThemedText>
+                            <ThemedText type="title">Check your email inbox</ThemedText>
+                            {!verified ? (
+                                <>
+                                    <ThemedText>
+                                        We have sent you an email, open it and click on the link to activate the account.
+                                        Once done return to the app.
+                                    </ThemedText>
+                                    <ActivityIndicator size="large" style={{ marginTop: 20 }} />
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle size={48} color={Colors[colorScheme ?? "light"].tint} style={{ marginTop: 20, alignSelf: "center" }} />
+                                    <ThemedText style={{ marginTop: 8, textAlign: "center" }}>
+                                        Account verified! Redirecting...
+                                    </ThemedText>
+                                </>
+                            )}
                         </View>
                     )}
+
 
                     {/* Bottom buttons */}
                     <View style={styles.footer}>
@@ -244,7 +327,7 @@ export default function OnboardingScreen() {
                             </Pressable>
                         )}
                         <Pressable
-                            onPress={goNext}
+                            onPress={step === 3 ? callRegister : goNext}
                             style={[
                                 { backgroundColor: Colors[colorScheme ?? "light"].tint },
                                 styles.button,

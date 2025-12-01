@@ -48,7 +48,8 @@
     "react-native-typewriter": "^0.7.0",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.5.1",
-    "rive-react-native": "^9.7.0"
+    "rive-react-native": "^9.7.0",
+    "expo-file-system": "~19.0.19"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
