@@ -38,7 +38,7 @@ const AuthPage = () => {
     setError(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      await authState.logIn(email, password);
+      await authState.logIn(email, password, true);
     } catch (err: any) {
       setError(err.message || 'Login failed');
     }

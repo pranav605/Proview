@@ -2,7 +2,6 @@ import { SplashScreen, useRouter } from "expo-router";
 import { createContext, PropsWithChildren, useEffect, useState } from "react";
 import { supabase } from "../utils/supabaseClient";
 
-
 SplashScreen.preventAutoHideAsync();
 
 type RegisterResult =
@@ -14,8 +13,8 @@ type AuthState = {
   isReady: boolean;
   isLoggedIn: boolean;
   hasCompletedOnboarding: boolean;
-  logIn: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string, image: string, imageType: string) => Promise<RegisterResult>;
+  logIn: (email: string, password: string, redirect: boolean) => Promise<void>;
+  register: (email: string, password: string) => Promise<RegisterResult>;
   logOut: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
   resetOnboarding: () => Promise<void>;
@@ -56,7 +55,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     };
   }, []);
 
-  const logIn = async (email: string, password: string) => {
+  const logIn = async (email: string, password: string, redirect: boolean) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       console.log("Login error:", error.message);
@@ -64,49 +63,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
       return;
     }
     setIsLoggedIn(true);
-    router.replace("/");
+    { redirect && router.replace("/");}
   };
 
-  const register = async (email: string, password: string, name: string, image: string, imageType: string) => {
+  const register = async (email: string, password: string) => {
     try {
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
-
-      const user = data?.user;
-      if (!user) throw new Error("No user returned from signUp");
-
-      // Read the file as base64
-      // const file = new FileSystem.File(image);
-      // let base64 = '';
-      // file.base64().then((base)=>{
-      //   base64= base;
-      // })
-
-      // // Define unique file path
-      // const fileExt = image.split('.').pop() || 'jpg';
-      // const fileName = `${user.id}_${Date.now()}.${fileExt}`;
-      // const filePath = `profile-images/${fileName}`;
-
-      // // Upload using Supabase Storage from base64 buffer
-      // const { error: uploadError } = await supabase.storage
-      //   .from('profile-images')
-      //   .upload(filePath, base64, {
-      //     cacheControl: '3600',
-      //     upsert: false,
-      //     contentType: imageType || 'image/jpeg',
-      //   });
-
-      // if (uploadError) throw uploadError;
-
-      // const { error: profileError } = await supabase
-      //   .from('profiles')
-      //   .insert({
-      //     id: user.id,
-      //     name: name,
-      //     image: filePath, // Save path, not the local image URI
-      //   });
-
-      // if (profileError) throw profileError;
 
       return { success: true };
     } catch (err: any) {

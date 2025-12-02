@@ -6,22 +6,24 @@ import { Colors } from "@/constants/theme";
 import { AuthContext } from "@/contexts/authContext";
 import { useColorScheme } from "@/hooks/use-color-scheme.web";
 import { supabase } from "@/utils/supabaseClient";
+import * as FileSystem from 'expo-file-system';
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from "expo-router";
 import { CheckCircle, Eye, EyeOff, Smile } from "lucide-react-native";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useRef, useState } from "react";
 import {
-    ActivityIndicator,
+    Button,
     Image,
     KeyboardAvoidingView,
     Platform,
     Pressable,
     StyleSheet,
     TextInput,
+    TouchableOpacity,
     View
 } from "react-native";
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 
 export default function OnboardingScreen() {
     const [step, setStep] = useState(1);
@@ -66,6 +68,54 @@ export default function OnboardingScreen() {
 
     };
 
+    const updateProfile = async (name: string, image: string, imageType: string) => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+        try {
+            const { data: { user }, error } = await supabase.auth.getUser();
+
+            if (error) {
+                throw error;
+            }
+
+            if (!user) {
+                throw "user not found";
+            }
+            // Read the file as base64
+            const file = new FileSystem.File(image);
+            const base64 = await file.base64();
+
+
+            // Define unique file path
+            const fileExt = image.split('.').pop() || 'jpg';
+            const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+            const filePath = `profile-images/${fileName}`;
+
+            // Upload using Supabase Storage from base64 buffer
+            const { error: uploadError } = await supabase.storage
+                .from('profile-images')
+                .upload(filePath, base64, {
+                    cacheControl: '3600',
+                    upsert: false,
+                    contentType: imageType || 'image/jpeg',
+                });
+
+            if (uploadError) throw uploadError;
+
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .insert({
+                    id: user.id,
+                    name: name,
+                    avatar_url: filePath, // Save path, not the local image URI
+                });
+
+            if (profileError) throw profileError;
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
     const goNext = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         if (step < TOTAL_STEPS) setStep(step + 1);
@@ -82,7 +132,9 @@ export default function OnboardingScreen() {
     const [isChecking, setIsChecking] = useState(true);
     const [verified, setVerified] = useState(false);
 
-    useEffect(() => {
+    const checkEmailVerification = () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
         let interval: ReturnType<typeof setInterval>;
         if (step === 4) {
             interval = setInterval(async () => {
@@ -106,11 +158,13 @@ export default function OnboardingScreen() {
 
             return () => clearInterval(interval);
         }
-    }, [step]);
+    }
 
     const callRegister = () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
         const register = async () => {
-            const result = await authContext.register(authFields.email, authFields.password, profileFields.name, profileFields.image, profileFields.imageType);
+            const result = await authContext.register(authFields.email, authFields.password);
             if (!result.success) {
                 alert(`Registration failed: ${result.message}`);
             } else {
@@ -149,7 +203,7 @@ export default function OnboardingScreen() {
 
                 <ParallaxScrollView
                     headerBackgroundColor={{ light: "#D0D0D0", dark: "#353636" }}
-                    headerImage={step === 2 && profileFields.image ? (
+                    headerImage={step === 4 && profileFields.image ? (
                         <Image
                             source={{ uri: profileFields.image }}
                             style={{ width: 192, height: 192, borderRadius: 48 }}
@@ -171,48 +225,6 @@ export default function OnboardingScreen() {
 
                     {/* STEP 2 (form) */}
                     {step === 2 && (
-                        <View style={styles.content}>
-                            <ThemedText type="title">Tell us about you</ThemedText>
-                            <ThemedText>
-                                Give us your full name and select a picture with your widest
-                                smile.
-                            </ThemedText>
-
-                            <TextInput
-                                value={profileFields.name}
-                                onChangeText={(text) =>
-                                    setProfileFields((p) => ({ ...p, name: text }))
-                                }
-                                placeholder="Name"
-                                style={[
-                                    styles.inputField,
-                                    { color: Colors[colorScheme ?? "light"].text },
-                                    {
-                                        backgroundColor:
-                                            Colors[colorScheme ?? "light"].background,
-                                    },
-                                ]}
-                                keyboardType="name-phone-pad"
-                                autoCapitalize="none"
-                                autoComplete="name"
-                            />
-                            <Pressable
-                                onPress={pickImage}
-                                style={[
-                                    styles.inputField,
-                                    styles.imagePickerButton,
-                                    { backgroundColor: Colors[colorScheme ?? "light"].background },
-                                ]}
-                            >
-                                <ThemedText style={{ color: Colors[colorScheme ?? "light"].text, textAlign: "center" }}>
-                                    {profileFields.image ? "Change image" : "Upload an image"}
-                                </ThemedText>
-                            </Pressable>
-                        </View>
-                    )}
-
-                    {/* STEP 3 */}
-                    {step === 3 && (
                         <View style={styles.content}>
                             <ThemedText type="title">Create a user account</ThemedText>
                             <ThemedText>
@@ -289,28 +301,84 @@ export default function OnboardingScreen() {
                         </View>
                     )}
 
+                    {/* STEP 3 */}
+                    {step === 3 && (
+                        <View style={styles.content}>
+                            <ThemedText type="title">Check your email inbox</ThemedText>
+                            <ThemedText>
+                                We have sent you an email, open it and click on the link to activate the account.
+                                Once done return to the app.
+                            </ThemedText>
+
+                        </View>
+                    )}
+
                     {/* STEP 4 */}
                     {step === 4 && (
                         <View style={styles.content}>
-                            <ThemedText type="title">Check your email inbox</ThemedText>
-                            {!verified ? (
-                                <>
-                                    <ThemedText>
-                                        We have sent you an email, open it and click on the link to activate the account.
-                                        Once done return to the app.
-                                    </ThemedText>
-                                    <ActivityIndicator size="large" style={{ marginTop: 20 }} />
-                                </>
-                            ) : (
-                                <>
-                                    <CheckCircle size={48} color={Colors[colorScheme ?? "light"].tint} style={{ marginTop: 20, alignSelf: "center" }} />
-                                    <ThemedText style={{ marginTop: 8, textAlign: "center" }}>
-                                        Account verified! Redirecting...
-                                    </ThemedText>
-                                </>
-                            )}
+                            <ThemedText type="title">Tell us about you</ThemedText>
+                            <ThemedText>
+                                Give us your full name and select a picture with your widest
+                                smile.
+                            </ThemedText>
+
+                            <TextInput
+                                value={profileFields.name}
+                                onChangeText={(text) =>
+                                    setProfileFields((p) => ({ ...p, name: text }))
+                                }
+                                placeholder="Name"
+                                style={[
+                                    styles.inputField,
+                                    { color: Colors[colorScheme ?? "light"].text },
+                                    {
+                                        backgroundColor:
+                                            Colors[colorScheme ?? "light"].background,
+                                    },
+                                ]}
+                                keyboardType="name-phone-pad"
+                                autoCapitalize="none"
+                                autoComplete="name"
+                            />
+                            <Pressable
+                                onPress={pickImage}
+                                style={[
+                                    styles.inputField,
+                                    styles.imagePickerButton,
+                                    { backgroundColor: Colors[colorScheme ?? "light"].background },
+                                ]}
+                            >
+                                <ThemedText style={{ color: Colors[colorScheme ?? "light"].text, textAlign: "center" }}>
+                                    {profileFields.image ? "Change image" : "Upload an image"}
+                                </ThemedText>
+                            </Pressable>
                         </View>
                     )}
+
+                    {/* Step 5 */}
+                    {step === 5 && (
+                        <View style={[styles.content, { alignItems: 'center', padding: 20 }]}>
+                            <CheckCircle size={64} color="#4CAF50" style={{ marginBottom: 20 }} />
+                            <ThemedText type="title" style={{ marginBottom: 12 }}>
+                                You are all set!!
+                            </ThemedText>
+                            <ThemedText style={{ textAlign: 'center', marginBottom: 30 }}>
+                                Start exploring ProView and enjoy discovering great products.
+                            </ThemedText>
+                            <TouchableOpacity
+                                style={styles.button}
+                                onPress={() => {
+                                    // Navigation logic, e.g. to dashboard or main app screen
+                                    router.replace('/');
+                                }}
+                            >
+                                <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>
+                                    Start Exploring
+                                </ThemedText>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
 
 
                     {/* Bottom buttons */}
@@ -326,17 +394,65 @@ export default function OnboardingScreen() {
                                 <ThemedText style={styles.buttonText}>Back</ThemedText>
                             </Pressable>
                         )}
-                        <Pressable
-                            onPress={step === 3 ? callRegister : goNext}
-                            style={[
-                                { backgroundColor: Colors[colorScheme ?? "light"].tint },
-                                styles.button,
-                            ]}
-                        >
-                            <ThemedText style={styles.buttonText}>
-                                {step === TOTAL_STEPS ? "Finish" : "Continue"}
-                            </ThemedText>
-                        </Pressable>
+                        {step === 1 &&
+                        <>
+                            <Button title='skip' onPress={()=>{authContext.completeOnboarding();router.replace('/authPage')}}></Button>
+                            <Pressable
+                                onPress={goNext}
+                                style={[
+                                    { backgroundColor: Colors[colorScheme ?? "light"].tint },
+                                    styles.button,
+                                ]}
+                            >
+                                <ThemedText style={styles.buttonText}>
+                                    {"Continue"}
+                                </ThemedText>
+                            </Pressable>
+                        </>
+                        }
+                        {
+                            step === 2 &&
+                            <Pressable
+                                onPress={callRegister}
+                                style={[
+                                    { backgroundColor: Colors[colorScheme ?? "light"].tint },
+                                    styles.button,
+                                ]}
+                            >
+                                <ThemedText style={styles.buttonText}>
+                                    {"Continue"}
+                                </ThemedText>
+                            </Pressable>
+                        }
+                        {
+                            step === 3 &&
+                            <Pressable
+                                onPress={() => { authContext.logIn(authFields.email, authFields.password, false); checkEmailVerification(); goNext(); }}
+                                style={[
+                                    { backgroundColor: Colors[colorScheme ?? "light"].tint },
+                                    styles.button,
+                                ]}
+                            >
+                                <ThemedText style={styles.buttonText}>
+                                    {"Continue"}
+                                </ThemedText>
+                            </Pressable>
+                        }
+                        {
+                            step === 4 &&
+                            <Pressable
+                                onPress={() => { updateProfile(profileFields.name, profileFields.image, profileFields.imageType); goNext() }}
+                                style={[
+                                    { backgroundColor: Colors[colorScheme ?? "light"].tint },
+                                    styles.button,
+                                ]}
+                            >
+                                <ThemedText style={styles.buttonText}>
+                                    {"Continue"}
+                                </ThemedText>
+                            </Pressable>
+                        }
+
                     </View>
                 </ParallaxScrollView>
             </ThemedView>
