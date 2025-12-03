@@ -4,9 +4,7 @@ import { supabase } from "../utils/supabaseClient";
 
 SplashScreen.preventAutoHideAsync();
 
-type RegisterResult =
-  | { success: boolean }
-  | { success: boolean; message: string };
+type RegisterResult = { success: boolean; message: string };
 
 
 type AuthState = {
@@ -71,7 +69,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
 
-      return { success: true };
+      return { success: true , message: "success"};
     } catch (err: any) {
       console.error("Registration error:", err.message);
       return { success: false, message: err.message };

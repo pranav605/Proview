@@ -24,6 +24,7 @@ function CustomDrawerContent(props: any) {
   const currentChatId = currentRoute.params?.chatid;
 
   const [profileUrl, setProfileUrl] = useState('');
+  const [userName, setuseName] = useState('Jane Doe')
 
   useEffect(() => {
     const fetchProfileUrl = async () => {
@@ -37,17 +38,21 @@ function CustomDrawerContent(props: any) {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('avatar_url')
+          .select('avatar_url, name')
           .eq('id', user.id)
           .single();
 
         if (error) throw error;
+        
+        if(data.name){
+          setuseName(data.name);
+        }
 
         if (data.avatar_url) {
           const { data: urlData } = supabase.storage
             .from('profile-images') // replace with your actual bucket name
             .getPublicUrl(data.avatar_url);
-          console.log(urlData.publicUrl)
+            
           setProfileUrl(urlData.publicUrl);
         } else {
           setProfileUrl('');
@@ -97,7 +102,7 @@ function CustomDrawerContent(props: any) {
       <DrawerItem
         label={() => (
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <ThemedText style={{ color: Colors[colorScheme ?? 'light'].text }}>Jane Doe</ThemedText>
+            <ThemedText style={{ color: Colors[colorScheme ?? 'light'].text }}>{userName}</ThemedText>
             <Settings color={Colors[colorScheme ?? 'light'].tint} size={24} />
           </View>
         )}

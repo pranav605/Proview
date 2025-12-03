@@ -6,6 +6,7 @@ import { Colors } from "@/constants/theme";
 import { AuthContext } from "@/contexts/authContext";
 import { useColorScheme } from "@/hooks/use-color-scheme.web";
 import { supabase } from "@/utils/supabaseClient";
+import { decode } from "base64-arraybuffer";
 import * as FileSystem from 'expo-file-system';
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from 'expo-image-picker';
@@ -63,7 +64,7 @@ export default function OnboardingScreen() {
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
             const pickedUri = result.assets[0].uri;
-            setProfileFields((p) => ({ ...p, image: pickedUri, imageType: result.assets[0].type || 'image/jpeg' }));
+            setProfileFields((p) => ({ ...p, image: pickedUri, imageType: result.assets[0].mimeType || 'image/jpeg' }));
         }
 
     };
@@ -87,19 +88,17 @@ export default function OnboardingScreen() {
 
 
             // Define unique file path
-            const fileExt = image.split('.').pop() || 'jpg';
-            const fileName = `${user.id}_${Date.now()}.${fileExt}`;
-            const filePath = `profile-images/${fileName}`;
+            const fileName = image.split('/').pop();
+            // const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+            const filePath = `profile-images/${user.id}/${fileName}`;
 
             // Upload using Supabase Storage from base64 buffer
-            const { error: uploadError } = await supabase.storage
+            const {data,  error: uploadError } = await supabase.storage
                 .from('profile-images')
-                .upload(filePath, base64, {
-                    cacheControl: '3600',
-                    upsert: false,
+                .upload(filePath, decode(base64), {
                     contentType: imageType || 'image/jpeg',
                 });
-
+                
             if (uploadError) throw uploadError;
 
             const { error: profileError } = await supabase
