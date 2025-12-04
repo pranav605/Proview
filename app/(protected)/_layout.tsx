@@ -24,7 +24,8 @@ function CustomDrawerContent(props: any) {
   const currentChatId = currentRoute.params?.chatid;
 
   const [profileUrl, setProfileUrl] = useState('');
-  const [userName, setuseName] = useState('Jane Doe')
+  const [userName, setuseName] = useState('Jane Doe');
+  const authContext = useContext(AuthContext);
 
   useEffect(() => {
     const fetchProfileUrl = async () => {
@@ -36,26 +37,16 @@ function CustomDrawerContent(props: any) {
       if (!user) return;
 
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('avatar_url, name')
-          .eq('id', user.id)
-          .single();
-
-        if (error) throw error;
-        
-        if(data.name){
-          setuseName(data.name);
-        }
-
-        if (data.avatar_url) {
+        console.log(authContext.user)
+        if (authContext.user?.avatar_url) {
           const { data: urlData } = supabase.storage
             .from('profile-images') // replace with your actual bucket name
-            .getPublicUrl(data.avatar_url);
-            
+            .getPublicUrl(authContext.user?.avatar_url);
+          console.log(urlData.publicUrl);
+          
           setProfileUrl(urlData.publicUrl);
         } else {
-          setProfileUrl('');
+          setProfileUrl('https://variety.com/wp-content/uploads/2021/10/Evan-Spiegel-Snap-chief-executive-officer.png');
         }
       } catch (error) {
         console.error('Error fetching avatar_url:', error);
@@ -113,7 +104,7 @@ function CustomDrawerContent(props: any) {
         icon={({ color, size }) => (
           <Image
             source={{
-              uri: profileUrl || 'https://variety.com/wp-content/uploads/2021/10/Evan-Spiegel-Snap-chief-executive-officer.png',
+              uri: profileUrl ,
             }}
             alt="user"
             style={{ width: 35, height: 35, borderRadius: 25 }}
