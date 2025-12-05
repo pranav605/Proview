@@ -68,7 +68,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsLoggedIn(!!session?.user);
-      setIsReady(true); 
+      setIsReady(true);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -82,13 +82,21 @@ export function AuthProvider({ children }: PropsWithChildren) {
           .eq('id', session.user.id)
           .single();
 
+
+        const { data: urlData } = supabase.storage
+          .from('profile-images') // replace with your actual bucket name
+          .getPublicUrl(profile?.avatar_url);
+
         setUser(profile ? {
           ...profile,
+          avatar_url: urlData.publicUrl,
           email: session.user.email || ''
         } : null);
       } else {
         setUser(null);
       }
+
+
     });
 
     return () => subscription.unsubscribe();

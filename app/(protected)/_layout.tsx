@@ -4,7 +4,6 @@ import { Colors } from '@/constants/theme';
 import { AuthContext } from '@/contexts/authContext';
 import { ChatProvider, useChats } from '@/contexts/ChatContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { supabase } from '@/utils/supabaseClient';
 import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { Redirect } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
@@ -23,37 +22,28 @@ function CustomDrawerContent(props: any) {
   const currentRoute = props.state.routes[props.state.index];
   const currentChatId = currentRoute.params?.chatid;
 
-  const [profileUrl, setProfileUrl] = useState('');
-  const [userName, setuseName] = useState('Jane Doe');
+  const [profileUrl, setProfileUrl] = useState('https://api.dicebear.com/9.x/avataaars-neutral/svg?seed=Katherine');
+  const [userName, setuserName] = useState('Jane Doe');
   const authContext = useContext(AuthContext);
 
   useEffect(() => {
     const fetchProfileUrl = async () => {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError) {
-        console.error(userError);
-        return;
-      }
-      if (!user) return;
 
       try {
-        console.log(authContext.user)
+        if(authContext.user?.name){
+          setuserName(authContext.user?.name);
+        }
         if (authContext.user?.avatar_url) {
-          const { data: urlData } = supabase.storage
-            .from('profile-images') // replace with your actual bucket name
-            .getPublicUrl(authContext.user?.avatar_url);
-          console.log(urlData.publicUrl);
-          
-          setProfileUrl(urlData.publicUrl);
+          setProfileUrl(authContext.user?.avatar_url);
         } else {
-          setProfileUrl('https://variety.com/wp-content/uploads/2021/10/Evan-Spiegel-Snap-chief-executive-officer.png');
+          setProfileUrl('https://api.dicebear.com/9.x/avataaars-neutral/svg?seed=Katherine');
         }
       } catch (error) {
         console.error('Error fetching avatar_url:', error);
       }
     };
     fetchProfileUrl();
-  }, []);
+  }, [authContext.isReady, authContext.user]);
 
   return (
     <ThemedView style={{ flex: 1 }}>
