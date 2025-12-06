@@ -280,45 +280,8 @@ export default function ChatScreen() {
           style={styles.flex1}
         />
 
-        {/* Input Bar */}
+        {/* Retry Button */}
         <View style={styles.inputWrapper}>
-          {/* <Animated.View style={[
-            styles.inputContainer,
-            { 
-              height: animatedHeight,
-              backgroundColor: Colors[colorScheme ?? 'light'].background,
-              borderColor: Colors[colorScheme ?? 'light'].tint,
-            }
-          ]}>
-            <View style={styles.row}>
-              <TextInput
-                value={query}
-                onChangeText={setQuery}
-                placeholder="Ask a follow-up..."
-                placeholderTextColor="#888"
-                style={[styles.input, { color: Colors[colorScheme ?? 'light'].text }]}
-                returnKeyType="send"
-                onSubmitEditing={() => handleSendMessage()}
-                onContentSizeChange={handleContentSizeChange}
-                multiline
-                editable={!loading}
-              />
-              <TouchableOpacity 
-                style={styles.button} 
-                onPress={() => handleSendMessage()}
-                disabled={loading || !query.trim()}
-              >
-                {loading ? (
-                  <ActivityIndicator size="small" color={Colors[colorScheme ?? 'light'].tint} />
-                ) : (
-                  <SendHorizonal
-                    color={query.trim() ? Colors[colorScheme ?? 'light'].tint : '#888'}
-                    size={22}
-                  />
-                )}
-              </TouchableOpacity>
-            </View>
-          </Animated.View> */}
           {
             error && <TouchableOpacity 
                 style={styles.button} 

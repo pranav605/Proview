@@ -1,8 +1,6 @@
 import { ThemedText } from '@/components/themed-text'
 import { ThemedView } from '@/components/themed-view'
-import { Colors } from '@/constants/theme'
 import { AuthContext } from '@/contexts/authContext'
-import { useColorScheme } from '@/hooks/use-color-scheme.web'
 import React, { useContext, useEffect, useState } from 'react'
 import { Button, Image, StyleSheet, TouchableOpacity } from 'react-native'
 
@@ -10,7 +8,6 @@ const settings = () => {
   const authContext = useContext(AuthContext);
   const [username, setUserName] = useState("");
   const [profileUrl, setProfileUrl] = useState("");
-  const colorScheme = useColorScheme();
 
   const handleLogOut = () => {
     authContext.logOut();
@@ -27,9 +24,9 @@ const settings = () => {
   return (
     <ThemedView style={styles.container}>
       <ThemedView style={styles.profileSection}>
-        <Image source={{ uri: profileUrl }} height={96} width={96} style={[styles.profileImage, {borderColor: Colors[colorScheme ?? 'light'].tabIconDefault}]}></Image>
+        <Image source={{ uri: profileUrl }} height={80} width={80} style={[styles.profileImage]}></Image>
         <ThemedView style={styles.profileDetails}>
-          <ThemedText type='subtitle'>{username}</ThemedText>
+          <ThemedText type='default'>{username}</ThemedText>
           <TouchableOpacity>
             <ThemedText type='link'>Update Profile</ThemedText>
           </TouchableOpacity>
@@ -43,22 +40,21 @@ const settings = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 18,
+    padding: 16,
     gap: 32
   },
   profileSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 20,
+    gap: 16,
   },
   profileImage: {
-    borderWidth: 1,
     borderRadius: 100,
   },
   profileDetails: {
     flex: 1,
     flexDirection: 'column',
-    gap: 12,
+    gap: 0,
     justifyContent: 'center',
   }
 })
