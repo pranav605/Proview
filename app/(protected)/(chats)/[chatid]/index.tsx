@@ -18,7 +18,6 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import TypeWriter from 'react-native-typewriter';
 
 type Message = {
   role: 'user' | 'ai';
@@ -207,8 +206,7 @@ export default function ChatScreen() {
     </MotiView>
   );
 
-  const renderMessage = ({ item, index }: { item: Message; index: number }) => {
-    const isLastAiMessage = item.role === 'ai' && index === messages.length - 1;
+  const renderMessage = ({ item }: { item: Message;}) => {
     
     return (
       <MotiView
@@ -232,16 +230,10 @@ export default function ChatScreen() {
         >
           {item.role === 'ai' ? (
             <>
-              <TypeWriter
-                typing={1}
-                minDelay={1}
-                maxDelay={1}
-                style={[styles.messageText, { color: Colors[colorScheme ?? 'light'].text }]}
-                onTypingEnd={() => isLastAiMessage && setShowReferences(true)}
-              >
+              <ThemedText>
                 {item.text}
-              </TypeWriter>
-              {showReferences && isLastAiMessage && renderReferences(item.searchData)}
+              </ThemedText>
+              {renderReferences(item.searchData)}
             </>
           ) : (
             <Text style={[styles.messageText, { color: Colors[colorScheme ?? 'light'].text }]}>{item.text}</Text>
