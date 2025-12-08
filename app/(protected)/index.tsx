@@ -53,7 +53,7 @@ export default function Index() {
   const colorScheme = useColorScheme();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const animatedHeight = useRef(new Animated.Value(40)).current;
-  const { addChat } = useChats();
+  const { addChatAndNavigate } = useChats();
 
   // Split products into rows
   const rows = [];
@@ -87,7 +87,7 @@ export default function Index() {
       : userQuery;
     
     // Add chat to context (will appear in drawer immediately)
-    addChat({ id: newChatId, name: chatName });
+    addChatAndNavigate(userQuery);
     
     // Clear the input
     setQuery('');
