@@ -15,7 +15,6 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useChats } from '@/contexts/ChatContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { router } from 'expo-router';
 import { SendHorizonal } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import TypeWriter from 'react-native-typewriter';
@@ -92,16 +91,6 @@ export default function Index() {
     // Clear the input
     setQuery('');
     
-    // Navigate to the new chat route with the initial query
-    router.push({
-      pathname: '/(protected)/(chats)/[chatid]',
-      params: { 
-        chatid: newChatId,
-        chatName: chatName,
-        initialQuery: userQuery,
-      }
-    });
-
     setIsSubmitting(false);
   };
 

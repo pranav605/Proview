@@ -1,5 +1,6 @@
 import { AuthContext } from '@/contexts/authContext';
 import { supabase } from '@/utils/supabaseClient';
+import { useRouter } from 'expo-router';
 import React, {
   createContext,
   ReactNode,
@@ -30,6 +31,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useContext(AuthContext); // profiles.id
+  const router = useRouter();
 
   // 1) Load existing chats for the logged-in user
   useEffect(() => {
@@ -48,6 +50,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         return;
       }
+      console.log(data);
 
       const mapped: Chat[] = (data || []).map((row) => ({
         id: row.id,
@@ -108,6 +111,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         },
         ...prev,
       ]);
+
+      // Navigate to the new chat route with the initial query
+      router.push({
+        pathname: '/(protected)/(chats)/[chatid]',
+        params: {
+          chatid: chatId,
+          chatName: chatName,
+          initialQuery: query,
+        }
+      });
     },
     [user?.id]
   );

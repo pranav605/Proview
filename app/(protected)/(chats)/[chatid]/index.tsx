@@ -137,7 +137,7 @@ export default function ChatScreen() {
       const res = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: textToSend, chatid: chatid, userId : authContext.user?.id}),
+        body: JSON.stringify({ prompt: textToSend, chatId: chatid, userId : authContext.user?.id}),
       });
       const data = await res.json();
 
