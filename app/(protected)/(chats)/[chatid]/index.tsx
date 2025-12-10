@@ -4,6 +4,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { AuthContext } from '@/contexts/authContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { supabase } from '@/utils/supabaseClient';
 import { useLocalSearchParams } from 'expo-router';
 import { SendHorizonal } from 'lucide-react-native';
 import { MotiView } from 'moti';
@@ -86,23 +87,31 @@ export default function ChatScreen() {
 
     console.log('📥 Fetching chat history for:', chatid);
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
     try {
       // Check if chat exists in simulated DB
-      const chatData = simulatedDB[chatid];
-
-      if (chatData && chatData.message) {
-        console.log('✅ Found', chatData.message, 'messages in DB');
-        setMessage(chatData.message);
+      // const chatData = simulatedDB[chatid];
+      // console.log(chatData)
+      // if (chatData) {
+        const {data, error} = await supabase.from('chats').select('summary').eq('id',chatid)
+        
+        if(error){
+          setMessage({text:'Failed to fetch chat history'});
+          throw error;
+        }
+        
+        const {data: sourceData, error: sourceDataError} = await supabase.from('chat_sources')
+                                              .select(`link:source_url, snippet:source_snippet, title:source_name`)
+                                              .eq('chat_id',chatid)
+        if(sourceDataError){
+          throw sourceDataError;
+        }
+        
+        setMessage({text: data[0].summary, searchData:sourceData});
         // Scroll to bottom after loading
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: false });
         }, 100);
-      } else {
-        console.log('❌ No messages found for this chat');
-      }
+      
     } catch (err) {
       console.error('Failed to fetch chat history:', err);
     } finally {
@@ -204,7 +213,7 @@ export default function ChatScreen() {
   );
 
   const renderMessage = ({ item }: { item: Message; }) => {
-
+    
     return (
       <MotiView
         from={{
