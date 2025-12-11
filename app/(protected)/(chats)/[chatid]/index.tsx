@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Animated,
   FlatList,
+  Image,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -49,6 +50,7 @@ export default function ChatScreen() {
   const animatedHeight = useRef(new Animated.Value(50)).current;
   const flatListRef = useRef<FlatList>(null);
   const authContext = useContext(AuthContext);
+  const [resendQuery, setResendQuery] = useState(initialQuery);
 
   // Track the last loaded chat ID
   const lastLoadedChatId = useRef<string>('');
@@ -92,26 +94,32 @@ export default function ChatScreen() {
       // const chatData = simulatedDB[chatid];
       // console.log(chatData)
       // if (chatData) {
-        const {data, error} = await supabase.from('chats').select('summary').eq('id',chatid)
-        
-        if(error){
-          setMessage({text:'Failed to fetch chat history'});
-          throw error;
-        }
-        
-        const {data: sourceData, error: sourceDataError} = await supabase.from('chat_sources')
-                                              .select(`link:source_url, snippet:source_snippet, title:source_name`)
-                                              .eq('chat_id',chatid)
-        if(sourceDataError){
-          throw sourceDataError;
-        }
-        
-        setMessage({text: data[0].summary, searchData:sourceData});
-        // Scroll to bottom after loading
-        setTimeout(() => {
-          flatListRef.current?.scrollToEnd({ animated: false });
-        }, 100);
-      
+      const { data, error } = await supabase.from('chats').select('summary, user_query').eq('id', chatid)
+
+      if (error) {
+        setMessage({ text: 'Failed to fetch chat history' });
+        throw error;
+      }
+
+
+      if (!data[0].summary) {
+        setResendQuery(data[0].user_query)
+        setError(true);
+      }
+
+      const { data: sourceData, error: sourceDataError } = await supabase.from('chat_sources')
+        .select(`link:source_url, snippet:source_snippet, title:source_name`)
+        .eq('chat_id', chatid)
+      if (sourceDataError) {
+        throw sourceDataError;
+      }
+
+      setMessage({ text: data[0].summary, searchData: sourceData });
+      // Scroll to bottom after loading
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+      }, 100);
+
     } catch (err) {
       console.error('Failed to fetch chat history:', err);
     } finally {
@@ -146,7 +154,7 @@ export default function ChatScreen() {
       const res = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: textToSend, chatId: chatid, userId : authContext.user?.id}),
+        body: JSON.stringify({ prompt: textToSend, chatId: chatid, userId: authContext.user?.id }),
       });
       const data = await res.json();
 
@@ -154,7 +162,7 @@ export default function ChatScreen() {
         text: data.response || 'No response received.',
         searchData: data.searchData,
       };
-
+      setError(false)
       setMessage(aiMessage);
 
       // Save to simulated database (in-memory storage)
@@ -213,7 +221,7 @@ export default function ChatScreen() {
   );
 
   const renderMessage = ({ item }: { item: Message; }) => {
-    
+
     return (
       <MotiView
         from={{
@@ -254,30 +262,57 @@ export default function ChatScreen() {
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-        <ThemedText>
-          {renderMessage({item: message})}
-        </ThemedText>
+    <ScrollView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}
+      contentContainerStyle={{flexGrow:1}}
+    >
+      <ThemedText>
+        {renderMessage({ item: message })}
+      </ThemedText>
+      {/* Retry Button */}
+      <View style={styles.inputWrapper}>
+        {error && (
+          <View
+            style={{
+              flex: 1,
+              width: "100%",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Image
+              source={require('@/assets/images/retry.webp')}
+              style={{
+                width: 420,
+                height: 420,
+                resizeMode: "contain",
+              }}
+            />
 
-        {/* Retry Button */}
-        <View style={styles.inputWrapper}>
-          {
-            error && <TouchableOpacity
+            <TouchableOpacity
               style={styles.button}
-              onPress={() => handleSendMessage(initialQuery)}
-              disabled={loading || !initialQuery.trim()}
+              onPress={() => handleSendMessage(resendQuery)}
+              disabled={loading || !resendQuery.trim()}
             >
               {loading ? (
-                <ActivityIndicator size="small" color={Colors[colorScheme ?? 'light'].tint} />
+                <ActivityIndicator
+                  size="small"
+                  color={Colors[colorScheme ?? "light"].tint}
+                />
               ) : (
                 <SendHorizonal
-                  color={query.trim() ? Colors[colorScheme ?? 'light'].tint : '#888'}
+                  color={
+                    query.trim()
+                      ? Colors[colorScheme ?? "light"].tint
+                      : "#888"
+                  }
                   size={22}
                 />
               )}
             </TouchableOpacity>
-          }
-        </View>
+          </View>
+        )}
+      </View>
+
     </ScrollView>
   );
 }
@@ -305,7 +340,7 @@ const styles = StyleSheet.create({
   referencesWrapper: { flexDirection: "row", flexWrap: "wrap", marginTop: 8, gap: 8 },
   referenceItem: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, backgroundColor: "#404040" },
   flatListContent: { paddingVertical: 16, paddingBottom: 120, flexGrow: 1 },
-  inputWrapper: { position: 'absolute', bottom: 20, left: 10, right: 10 },
+  inputWrapper: { flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center' },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
