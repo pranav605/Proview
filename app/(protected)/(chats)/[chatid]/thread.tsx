@@ -17,58 +17,55 @@ import {
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
+import { AuthContext } from '@/contexts/authContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { supabase } from '@/utils/supabaseClient';
 import * as Haptics from 'expo-haptics';
-import { ChevronDown, ChevronUp, MessageCircle, Minus, Search, SendHorizonal, ThumbsUp, TrendingDown, TrendingUp } from 'lucide-react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { ChevronDown, ChevronUp, Minus, Search, SendHorizonal, ThumbsUp, TrendingDown, TrendingUp } from 'lucide-react-native';
 import { MotiView } from 'moti';
-import { useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 
 const { width } = Dimensions.get('window');
 
 type Review = {
   id: string;
-  username: string;
-  content: string;
-  timestamp: Date;
-  upvotes: number;
-  replies?: number;
-  isUpvoted?: boolean;
+  product_id: string;
+  given_by: string;
+  text: string;
+  vote_type: string;
+  created_time: Date;
+  upvote_count: number;
+  downvote_count: number;
+  profiles: {
+    name: string;
+  };
 };
 
-type VoteOption = 'Worth It' | 'Maybe' | 'Skip It';
+export type Chat = {
+  id: string;
+  queried_by: string;
+  product_id?: string | null;
+};
+
+type VoteOption = 'worthit' | 'maybe' | 'skipit';
 
 export default function ThreadScreen() {
+  const params = useLocalSearchParams<{
+    chatid: string;
+    chatName?: string;
+    chatData: any;
+  }>();
+
+  const vote_types = ['worthit', 'maybe', 'skipit']
+
+  const chatid = Array.isArray(params.chatid) ? params.chatid[0] : params.chatid;
+  const [chatData, setChatData] = useState<Chat | null>(null);
+  const authContext = useContext(AuthContext);
+
   const colorScheme = useColorScheme();
-  const [reviews, setReviews] = useState<Review[]>([
-    {
-      id: '1',
-      username: 'TechEnthusiast',
-      content: 'Amazing product! The battery life is incredible and the camera quality exceeded my expectations.',
-      timestamp: new Date(Date.now() - 3600000),
-      upvotes: 24,
-      replies: 3,
-      isUpvoted: false,
-    },
-    {
-      id: '2',
-      username: 'BudgetBuyer',
-      content: 'Good product but overpriced for what you get. There are better alternatives in the market.',
-      timestamp: new Date(Date.now() - 7200000),
-      upvotes: 12,
-      replies: 1,
-      isUpvoted: false,
-    },
-    {
-      id: '3',
-      username: 'ProductReviewer',
-      content: 'Had some issues initially but customer support was excellent. Working perfectly now!',
-      timestamp: new Date(Date.now() - 10800000),
-      upvotes: 8,
-      replies: 0,
-      isUpvoted: false,
-    },
-  ]);
-  
+  const [reviews, setReviews] = useState<Review[]>([ ]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [newReview, setNewReview] = useState('');
   const [showVoteModal, setShowVoteModal] = useState(false);
@@ -76,13 +73,75 @@ export default function ThreadScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [votes, setVotes] = useState<Record<VoteOption, number>>({
-    'Worth It': 45,
-    'Maybe': 30,
-    'Skip It': 25,
+    'worthit': 45,
+    'maybe': 30,
+    'skipit': 25,
   });
-  
+  const [reviewId, setReviewId] = useState(null);
+
+  const [voteType, setVoteType] = useState('');
+
   const animatedHeight = useRef(new Animated.Value(50)).current;
   const flatListRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    const fetchChatData = async () => {
+      const { data, error } = await supabase.from('chats').select('id, queried_by, product_id').eq('id', chatid);
+      if (error) {
+        console.log(error);
+      } else {
+        setChatData(data[0]);
+      }
+    }
+    fetchChatData();
+  }, []);
+
+  useEffect(() => {
+    if (chatData?.product_id)
+      fetchReviews();
+  }, [chatData])
+
+  const fetchReviews = async () => {
+    const { data, error } = await supabase.from('reviews').select('*, profiles:given_by (name)').eq('product_id', chatData?.product_id);
+    if (error) {
+      console.log(error);
+    } else {
+      console.log("Reviews: ", data);
+      setReviews(data);
+    }
+  }
+
+  const submitReview = async () => {
+    const {data, error} = await supabase.from('reviews')
+                                        .insert({product_id: chatData?.product_id, given_by: authContext.user?.id, text: newReview.trim() })
+                                        .select('id')
+    if(error){
+      console.log(error);
+    } else {
+      console.log(data);
+      setReviewId(data[0].id)
+    }
+  }
+
+  const updateVote = async (option: VoteOption) => {
+    const {data, error} = await supabase.from('reviews')
+                                        .update({vote_type: option})
+                                        .eq('id', reviewId)
+    if(error){
+      console.log(error);
+    }
+  }
+
+  const submitUpVote = async (reviewId: string, upvote_count: number) => {
+    const {data, error} = await supabase.from('reviews')
+                                        .update({upvote_count: upvote_count + 1})
+                                        .eq('id', reviewId);
+    if(error){
+      console.log(error);
+    } else {
+      await fetchReviews();
+    }
+  }
 
   const handleContentSizeChange = (event: any) => {
     const newHeight = Math.min(event.nativeEvent.contentSize.height + 20, 150);
@@ -95,38 +154,25 @@ export default function ThreadScreen() {
 
   const handleSubmitReview = async () => {
     if (!newReview.trim() || isSubmitting) return;
-    
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsSubmitting(true);
-    
+
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const review: Review = {
-      id: Date.now().toString(),
-      username: 'You',
-      content: newReview,
-      timestamp: new Date(),
-      upvotes: 0,
-      replies: 0,
-      isUpvoted: false,
-    };
-    
-    setReviews((prev) => [review, ...prev]);
+    await submitReview();
+    await fetchReviews();
+
     setNewReview('');
     setIsSubmitting(false);
     setShowVoteModal(true);
-    
+
     // Scroll to top to show new review
     flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
   };
 
-  const handleVote = (option: VoteOption) => {
+  const handleVote = async (option: VoteOption) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setVotes((prev) => ({
-      ...prev,
-      [option]: prev[option] + 1,
-    }));
+    await updateVote(option)
     setShowVoteModal(false);
   };
 
@@ -135,25 +181,26 @@ export default function ThreadScreen() {
     setShowVoteModal(false);
   };
 
-  const handleUpvote = (reviewId: string) => {
+  const handleUpvote = async (reviewId: string, upvote_count: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setReviews((prev) =>
-      prev.map((review) =>
-        review.id === reviewId
-          ? {
-              ...review,
-              upvotes: review.isUpvoted ? review.upvotes - 1 : review.upvotes + 1,
-              isUpvoted: !review.isUpvoted,
-            }
-          : review
-      )
-    );
+    await submitUpVote(reviewId, upvote_count);
+    // setReviews((prev) =>
+    //   prev.map((review) =>
+    //     review.id === reviewId
+    //       ? {
+    //         ...review,
+    //         upvote_count: review.isUpvoted ? review.upvote_count - 1 : review.upvote_count + 1,
+    //         isUpvoted: !review.isUpvoted,
+    //       }
+    //       : review
+    //   )
+    // );
   };
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     // Simulate refresh
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await fetchReviews();
     setIsRefreshing(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
@@ -162,30 +209,30 @@ export default function ThreadScreen() {
     const diff = Date.now() - date.getTime();
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
-    
+
     if (days > 0) return `${days}d ago`;
     if (hours > 0) return `${hours}h ago`;
     return 'Just now';
   };
 
   const filteredReviews = reviews.filter((review) =>
-    review.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    review.username.toLowerCase().includes(searchQuery.toLowerCase())
+    review.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    review.profiles.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalVotes = votes['Worth It'] + votes['Maybe'] + votes['Skip It'];
+  const totalVotes = votes['worthit'] + votes['maybe'] + votes['skipit'];
   const maxBarWidth = width - 120;
 
   const renderBarChart = () => {
-    const chartData: Array<{ label: VoteOption; count: number; color: string; icon: any }> = [
-      { label: 'Worth It', count: votes['Worth It'], color: '#32b48d', icon: TrendingUp },
-      { label: 'Maybe', count: votes['Maybe'], color: '#e68161', icon: Minus },
-      { label: 'Skip It', count: votes['Skip It'], color: '#c0152f', icon: TrendingDown },
+    const chartData: Array<{ label: string; count: number; color: string; icon: any }> = [
+      { label: 'Worth It', count: votes['worthit'], color: '#32b48d', icon: TrendingUp },
+      { label: 'Maybe', count: votes['maybe'], color: '#e68161', icon: Minus },
+      { label: 'Skip It', count: votes['skipit'], color: '#c0152f', icon: TrendingDown },
     ];
 
     return (
       <View style={styles.barChartContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.chartHeader}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -267,38 +314,39 @@ export default function ThreadScreen() {
     >
       <View style={styles.reviewHeader}>
         <View style={styles.avatarPlaceholder}>
-          <Text style={styles.avatarText}>{item.username[0].toUpperCase()}</Text>
+          <Text style={styles.avatarText}>{item.profiles.name[0].toUpperCase()}</Text>
         </View>
         <View style={styles.reviewHeaderText}>
-          <ThemedText type="defaultSemiBold">{item.username}</ThemedText>
-          <ThemedText style={styles.timestamp}>{formatTimestamp(item.timestamp)}</ThemedText>
+          <ThemedText type="defaultSemiBold">{item.profiles.name}</ThemedText>
+          <ThemedText style={styles.timestamp}>{JSON.stringify(item.created_time)}</ThemedText>
         </View>
       </View>
-      <ThemedText style={styles.reviewContent}>{item.content}</ThemedText>
+      <ThemedText style={styles.reviewContent}>{item.text}</ThemedText>
       <View style={styles.reviewFooter}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => handleUpvote(item.id)}
-          accessibilityLabel={`${item.isUpvoted ? 'Remove upvote' : 'Upvote'} this review`}
+          onPress={() => handleUpvote(item.id, item.upvote_count)}
+          // accessibilityLabel={`${item.isUpvoted ? 'Remove upvote' : 'Upvote'} this review`}
           accessibilityRole="button"
         >
-          <ThumbsUp 
-            size={16} 
-            color={item.isUpvoted ? '#32b48d' : Colors[colorScheme ?? 'light'].text}
-            fill={item.isUpvoted ? '#32b48d' : 'none'}
+          <ThumbsUp
+            size={16}
+            // color={item.isUpvoted ? '#32b48d' : Colors[colorScheme ?? 'light'].text}
+            // fill={item.isUpvoted ? '#32b48d' : 'none'}
           />
-          <ThemedText style={[styles.actionText, item.isUpvoted && { color: '#32b48d' }]}>
-            {item.upvotes}
+          {/* <ThemedText style={[styles.actionText, item.isUpvoted && { color: '#32b48d' }]}> */}
+          <ThemedText style={styles.actionText}>
+            {item.upvote_count}
           </ThemedText>
         </TouchableOpacity>
-        <TouchableOpacity 
+        {/* <TouchableOpacity
           style={styles.actionButton}
           accessibilityLabel={`View ${item.replies} replies`}
           accessibilityRole="button"
         >
           <MessageCircle size={16} color={Colors[colorScheme ?? 'light'].text} />
           <ThemedText style={styles.actionText}>{item.replies || 0}</ThemedText>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     </MotiView>
   );
@@ -307,7 +355,7 @@ export default function ThreadScreen() {
     if (!showVoteModal) return null;
 
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.modalOverlay}
         activeOpacity={1}
         onPress={handleSkipVote}
@@ -341,7 +389,7 @@ export default function ThreadScreen() {
               <View style={styles.voteOptions}>
                 <TouchableOpacity
                   style={[styles.voteButton, { borderColor: '#32b48d' }]}
-                  onPress={() => handleVote('Worth It')}
+                  onPress={() => handleVote('worthit')}
                   accessibilityLabel="Rate as Worth It"
                   accessibilityRole="button"
                 >
@@ -353,7 +401,7 @@ export default function ThreadScreen() {
 
                 <TouchableOpacity
                   style={[styles.voteButton, { borderColor: '#e68161' }]}
-                  onPress={() => handleVote('Maybe')}
+                  onPress={() => handleVote('maybe')}
                   accessibilityLabel="Rate as Maybe"
                   accessibilityRole="button"
                 >
@@ -365,7 +413,7 @@ export default function ThreadScreen() {
 
                 <TouchableOpacity
                   style={[styles.voteButton, { borderColor: '#c0152f' }]}
-                  onPress={() => handleVote('Skip It')}
+                  onPress={() => handleVote('skipit')}
                   accessibilityLabel="Rate as Skip It"
                   accessibilityRole="button"
                 >
@@ -376,8 +424,8 @@ export default function ThreadScreen() {
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity 
-                onPress={handleSkipVote} 
+              <TouchableOpacity
+                onPress={handleSkipVote}
                 style={styles.skipButton}
                 accessibilityLabel="Skip rating"
                 accessibilityRole="button"
@@ -443,7 +491,7 @@ export default function ThreadScreen() {
         <View style={styles.inputWrapper}>
           <Animated.View style={[
             styles.inputContainer,
-            { 
+            {
               height: animatedHeight,
               backgroundColor: Colors[colorScheme ?? 'light'].background,
               borderColor: '#3d3f3e',
@@ -463,8 +511,8 @@ export default function ThreadScreen() {
                 editable={!isSubmitting}
                 accessibilityLabel="Write a review"
               />
-              <TouchableOpacity 
-                style={[styles.button, isSubmitting && styles.buttonDisabled]} 
+              <TouchableOpacity
+                style={[styles.button, isSubmitting && styles.buttonDisabled]}
                 onPress={handleSubmitReview}
                 disabled={isSubmitting || !newReview.trim()}
                 accessibilityLabel="Submit review"
@@ -639,7 +687,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     minHeight: 50,
-    margin:16
+    margin: 16
   },
   row: {
     flex: 1,

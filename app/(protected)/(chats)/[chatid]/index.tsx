@@ -6,7 +6,6 @@ import { AuthContext } from '@/contexts/authContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { supabase } from '@/utils/supabaseClient';
 import { useLocalSearchParams } from 'expo-router';
-import { SendHorizonal } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
@@ -263,7 +262,7 @@ export default function ChatScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}
-      contentContainerStyle={{flexGrow:1}}
+      contentContainerStyle={{ flexGrow: 1 }}
     >
       <ThemedText>
         {renderMessage({ item: message })}
@@ -280,7 +279,7 @@ export default function ChatScreen() {
             }}
           >
             <Image
-              source={require('@/assets/images/retry.webp')}
+              source={loading ? require('@/assets/images/retrying.webp') : require('@/assets/images/swr.webp')}
               style={{
                 width: 420,
                 height: 420,
@@ -299,14 +298,24 @@ export default function ChatScreen() {
                   color={Colors[colorScheme ?? "light"].tint}
                 />
               ) : (
-                <SendHorizonal
-                  color={
-                    query.trim()
-                      ? Colors[colorScheme ?? "light"].tint
-                      : "#888"
-                  }
-                  size={22}
-                />
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: 32,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  backgroundColor: Colors[colorScheme ?? 'light'].tint,
+                  borderRadius: 8,
+                  gap: 4,
+                }}>
+                  <ThemedText type='default' style={{
+                    color: 'white',
+                    fontSize: 14,
+                    fontWeight: '600',
+                  }} >Retry ?</ThemedText>
+                </View>
+
               )}
             </TouchableOpacity>
           </View>
@@ -330,7 +339,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     opacity: 0.7,
   },
-  messageContainer: { marginVertical: 8, flexDirection: 'row', paddingHorizontal: 10 },
+  messageContainer: { marginVertical: 8, flexDirection: 'row' },
   userAlign: { justifyContent: 'flex-end' },
   aiAlign: { justifyContent: 'flex-start' },
   bubble: { maxWidth: '100%', paddingVertical: 10, paddingHorizontal: 14, borderRadius: 20 },
@@ -359,7 +368,6 @@ const styles = StyleSheet.create({
     maxHeight: 150
   },
   button: {
-    width: 38,
     height: 38,
     borderRadius: 100,
     alignItems: 'center',
