@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   userBubble: { backgroundColor: '#303030', maxWidth: '75%' },
   aiBubble: { width: '100%', textAlign: 'justify' },
   messageText: { fontSize: 16 },
-  referencesWrapper: { flexDirection: "row", flexWrap: "wrap", marginTop: 8, gap: 8 },
+  referencesWrapper: { flexDirection: "row", flexWrap: "wrap", marginVertical: 16, gap: 8 },
   referenceItem: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, backgroundColor: "#404040" },
   flatListContent: { paddingVertical: 16, paddingBottom: 120, flexGrow: 1 },
   inputWrapper: { flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center' },

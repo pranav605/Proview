@@ -42,6 +42,15 @@ type Review = {
   };
 };
 
+type ReviewVote = {
+  id: string;
+  review_id: string;
+  user_id: string;
+  vote: 'up' | 'down';
+  created_at: Date;
+
+}
+
 export type Chat = {
   id: string;
   queried_by: string;
@@ -65,7 +74,7 @@ export default function ThreadScreen() {
 
   const colorScheme = useColorScheme();
   const [reviews, setReviews] = useState<Review[]>([ ]);
-
+  const [reviewVotes, setReviewVotes] = useState<ReviewVote[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [newReview, setNewReview] = useState('');
   const [showVoteModal, setShowVoteModal] = useState(false);
@@ -107,8 +116,38 @@ export default function ThreadScreen() {
       console.log(error);
     } else {
       console.log("Reviews: ", data);
+      if(data.length){
+        let reviewVote: ReviewVote[] = [];
+        let enchancedReviews = data.map(async (review)=> {
+          const { data: fetchedVotes, error: reviewVotesError} = await supabase.from('review_votes')
+                                                                              .select('*')
+                                                                              .eq('user_id',authContext.user?.id)
+                                                                              .eq('review_id',review.id)
+          if(error){
+            console.log(error);
+          } else {
+            if(fetchedVotes?.length){
+              if(data[0].vote == 'up'){
+                review["isUpvoted"] = true;
+              }else{
+                review["isUpvoted"] = false;
+              }
+              return review
+            }
+              reviewVote.push(data[0]);
+          }
+          review["isUpvoted"] = false;
+          return review;
+        });
+        if(reviewVote.length){
+          setReviewVotes(reviewVote);
+        }
       setReviews(data);
+
+      }
     }
+
+    
   }
 
   const submitReview = async () => {
