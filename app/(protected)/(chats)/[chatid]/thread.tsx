@@ -3,6 +3,7 @@ import {
   Animated,
   Dimensions,
   FlatList,
+  Image,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -40,6 +41,7 @@ type Review = {
   profiles: {
     name: string;
   };
+  isUpvoted: boolean;
 };
 
 type ReviewVote = {
@@ -73,7 +75,7 @@ export default function ThreadScreen() {
   const authContext = useContext(AuthContext);
 
   const colorScheme = useColorScheme();
-  const [reviews, setReviews] = useState<Review[]>([ ]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewVotes, setReviewVotes] = useState<ReviewVote[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [newReview, setNewReview] = useState('');
@@ -116,45 +118,48 @@ export default function ThreadScreen() {
       console.log(error);
     } else {
       console.log("Reviews: ", data);
-      if(data.length){
+      if (data.length) {
         let reviewVote: ReviewVote[] = [];
-        let enchancedReviews = data.map(async (review)=> {
-          const { data: fetchedVotes, error: reviewVotesError} = await supabase.from('review_votes')
-                                                                              .select('*')
-                                                                              .eq('user_id',authContext.user?.id)
-                                                                              .eq('review_id',review.id)
-          if(error){
-            console.log(error);
+        const promises = data.map(async (review) => {
+          const { data: fetchedVotes, error: reviewVotesError } = await supabase
+            .from('review_votes')
+            .select('*')
+            .eq('user_id', authContext.user?.id)
+            .eq('review_id', review.id);
+
+          if (reviewVotesError) {
+            console.log(reviewVotesError);
+          } else if (fetchedVotes?.length > 0) {
+            review.isUpvoted = fetchedVotes[0].vote === 'up';  // Fix: fetchedVotes[0], not data[0]
           } else {
-            if(fetchedVotes?.length){
-              if(data[0].vote == 'up'){
-                review["isUpvoted"] = true;
-              }else{
-                review["isUpvoted"] = false;
-              }
-              return review
-            }
-              reviewVote.push(data[0]);
+            review.isUpvoted = false;
           }
-          review["isUpvoted"] = false;
           return review;
         });
-        if(reviewVote.length){
-          setReviewVotes(reviewVote);
-        }
-      setReviews(data);
+
+        const enhancedReviews = await Promise.all(promises);  // Now fully resolved
+
+        // console.log("Review vote:",reviewVote);
+
+        // if (reviewVote.length > 0) {
+        //   console.log("Enchanced Reviews:" ,enhancedReviews);
+        //   setReviewVotes(reviewVote);
+        // }
+        console.log("Enchanced Reviews: ", enhancedReviews);
+
+        setReviews(enhancedReviews);
 
       }
     }
 
-    
+
   }
 
   const submitReview = async () => {
-    const {data, error} = await supabase.from('reviews')
-                                        .insert({product_id: chatData?.product_id, given_by: authContext.user?.id, text: newReview.trim() })
-                                        .select('id')
-    if(error){
+    const { data, error } = await supabase.from('reviews')
+      .insert({ product_id: chatData?.product_id, given_by: authContext.user?.id, text: newReview.trim() })
+      .select('id')
+    if (error) {
       console.log(error);
     } else {
       console.log(data);
@@ -163,22 +168,29 @@ export default function ThreadScreen() {
   }
 
   const updateVote = async (option: VoteOption) => {
-    const {data, error} = await supabase.from('reviews')
-                                        .update({vote_type: option})
-                                        .eq('id', reviewId)
-    if(error){
+    const { data, error } = await supabase.from('reviews')
+      .update({ vote_type: option })
+      .eq('id', reviewId)
+    if (error) {
       console.log(error);
     }
   }
 
   const submitUpVote = async (reviewId: string, upvote_count: number) => {
-    const {data, error} = await supabase.from('reviews')
-                                        .update({upvote_count: upvote_count + 1})
-                                        .eq('id', reviewId);
-    if(error){
+    const { data, error } = await supabase.from('reviews')
+      .update({ upvote_count: upvote_count + 1 })
+      .eq('id', reviewId);
+    if (error) {
       console.log(error);
     } else {
-      await fetchReviews();
+      const { data: reviewVotesEntry, error: reviewVotesError } = await supabase.from('review_votes')
+        .upsert({ review_id: reviewId, user_id: authContext.user?.id, vote: 'up' })
+        .select('id');
+      if (reviewVotesError) {
+        console.log(reviewVotesError);
+      } else {
+        await fetchReviews();
+      }
     }
   }
 
@@ -244,12 +256,14 @@ export default function ThreadScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  const formatTimestamp = (date: Date) => {
+  const formatTimestamp = (reviewDate: Date) => {
+    const date = new Date(reviewDate);
     const diff = Date.now() - date.getTime();
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
-
-    if (days > 0) return `${days}d ago`;
+    if (days == 1) return `Yesterday`;
+    else if (days > 1 && days < 7) return `${days}d ago`;
+    else if (days > 7) return `${date.toLocaleDateString()}`
     if (hours > 0) return `${hours}h ago`;
     return 'Just now';
   };
@@ -353,11 +367,20 @@ export default function ThreadScreen() {
     >
       <View style={styles.reviewHeader}>
         <View style={styles.avatarPlaceholder}>
-          <Text style={styles.avatarText}>{item.profiles.name[0].toUpperCase()}</Text>
+          {authContext.user?.avatar_url ? <Image
+            source={{
+              uri: authContext.user.avatar_url,
+            }}
+            alt="user"
+            style={{ width: 40, height: 40, borderRadius: 25 }}
+          />
+            :
+            <Text style={styles.avatarText}>{item.profiles.name[0].toUpperCase()}</Text>
+          }
         </View>
         <View style={styles.reviewHeaderText}>
           <ThemedText type="defaultSemiBold">{item.profiles.name}</ThemedText>
-          <ThemedText style={styles.timestamp}>{JSON.stringify(item.created_time)}</ThemedText>
+          <ThemedText style={styles.timestamp}>{formatTimestamp(item.created_time)}</ThemedText>
         </View>
       </View>
       <ThemedText style={styles.reviewContent}>{item.text}</ThemedText>
@@ -365,16 +388,16 @@ export default function ThreadScreen() {
         <TouchableOpacity
           style={styles.actionButton}
           onPress={() => handleUpvote(item.id, item.upvote_count)}
-          // accessibilityLabel={`${item.isUpvoted ? 'Remove upvote' : 'Upvote'} this review`}
+          accessibilityLabel={`${item.isUpvoted ? 'Remove upvote' : 'Upvote'} this review`}
           accessibilityRole="button"
         >
           <ThumbsUp
             size={16}
-            // color={item.isUpvoted ? '#32b48d' : Colors[colorScheme ?? 'light'].text}
-            // fill={item.isUpvoted ? '#32b48d' : 'none'}
+          color={item.isUpvoted ? '#32b48d' : Colors[colorScheme ?? 'light'].text}
+          fill={item.isUpvoted ? '#32b48d' : 'none'}
           />
-          {/* <ThemedText style={[styles.actionText, item.isUpvoted && { color: '#32b48d' }]}> */}
-          <ThemedText style={styles.actionText}>
+          <ThemedText style={[styles.actionText, item.isUpvoted && { color: '#32b48d' }]}>
+          {/* <ThemedText style={styles.actionText}> */}
             {item.upvote_count}
           </ThemedText>
         </TouchableOpacity>

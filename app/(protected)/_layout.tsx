@@ -129,6 +129,9 @@ function DrawerNavigator() {
           drawerItemStyle: {
             borderRadius: 4,
           },
+          //TODO: Enable full screen width swipe for drawer
+          //      resolve the conflicts with chat screen getsure handler
+          // swipeEdgeWidth: Dimensions.get('window').width
         }}
       >
         <Drawer.Screen
