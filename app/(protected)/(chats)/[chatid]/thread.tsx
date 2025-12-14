@@ -91,6 +91,7 @@ export default function ThreadScreen() {
   const [reviewId, setReviewId] = useState(null);
 
   const [voteType, setVoteType] = useState('');
+  const [hasReviewed, setHasReviewed] = useState(false);
 
   const animatedHeight = useRef(new Animated.Value(50)).current;
   const flatListRef = useRef<FlatList>(null);
@@ -121,6 +122,9 @@ export default function ThreadScreen() {
       if (data.length) {
         let reviewVote: ReviewVote[] = [];
         const promises = data.map(async (review) => {
+          if (review.given_by === authContext.user?.id) {
+            setHasReviewed(true);
+          }
           const { data: fetchedVotes, error: reviewVotesError } = await supabase
             .from('review_votes')
             .select('*')
@@ -176,23 +180,75 @@ export default function ThreadScreen() {
     }
   }
 
-  const submitUpVote = async (reviewId: string, upvote_count: number) => {
-    const { data, error } = await supabase.from('reviews')
-      .update({ upvote_count: upvote_count + 1 })
-      .eq('id', reviewId);
-    if (error) {
-      console.log(error);
-    } else {
-      const { data: reviewVotesEntry, error: reviewVotesError } = await supabase.from('review_votes')
-        .upsert({ review_id: reviewId, user_id: authContext.user?.id, vote: 'up' })
-        .select('id');
-      if (reviewVotesError) {
-        console.log(reviewVotesError);
-      } else {
-        await fetchReviews();
-      }
+  const submitUpVote = async (reviewId: string, currentUpvotes: number) => {
+    if (!authContext.user?.id) return;
+
+    const userId = authContext.user.id;
+
+    const { data: existing, error: existingError } = await supabase
+      .from('review_votes')
+      .select('id, vote')
+      .eq('review_id', reviewId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (existingError) {
+      console.log('review_votes fetch error:', existingError);
+      return;
     }
-  }
+
+    let newUpvotes = currentUpvotes;
+
+    if (!existing) {
+
+      const { error: insertError } = await supabase.from('review_votes').insert({
+        review_id: reviewId,
+        user_id: userId,
+        vote: 'up',
+      });
+      if (insertError) {
+        console.log('insert vote error:', insertError);
+        return;
+      }
+      newUpvotes = currentUpvotes + 1;
+    } else if (existing.vote === 'up') {
+
+      const { error: deleteError } = await supabase
+        .from('review_votes')
+        .delete()
+        .eq('id', existing.id);
+      if (deleteError) {
+        console.log('delete vote error:', deleteError);
+        return;
+      }
+      newUpvotes = Math.max(0, currentUpvotes - 1);
+    } else if (existing.vote === 'down') {
+
+      const { error: updateError } = await supabase
+        .from('review_votes')
+        .update({ vote: 'up' })
+        .eq('id', existing.id);
+      if (updateError) {
+        console.log('update vote error:', updateError);
+        return;
+      }
+
+      newUpvotes = currentUpvotes + 1;
+    }
+
+    const { error: reviewError } = await supabase
+      .from('reviews')
+      .update({ upvote_count: newUpvotes })
+      .eq('id', reviewId);
+
+    if (reviewError) {
+      console.log('update review error:', reviewError);
+      return;
+    }
+
+    await fetchReviews();
+  };
+
 
   const handleContentSizeChange = (event: any) => {
     const newHeight = Math.min(event.nativeEvent.contentSize.height + 20, 150);
@@ -393,11 +449,11 @@ export default function ThreadScreen() {
         >
           <ThumbsUp
             size={16}
-          color={item.isUpvoted ? '#32b48d' : Colors[colorScheme ?? 'light'].text}
-          fill={item.isUpvoted ? '#32b48d' : 'none'}
+            color={item.isUpvoted ? '#32b48d' : Colors[colorScheme ?? 'light'].text}
+            fill={item.isUpvoted ? '#32b48d' : 'none'}
           />
           <ThemedText style={[styles.actionText, item.isUpvoted && { color: '#32b48d' }]}>
-          {/* <ThemedText style={styles.actionText}> */}
+            {/* <ThemedText style={styles.actionText}> */}
             {item.upvote_count}
           </ThemedText>
         </TouchableOpacity>
@@ -550,7 +606,7 @@ export default function ThreadScreen() {
         />
 
         {/* Input Bar */}
-        <View style={styles.inputWrapper}>
+        {!hasReviewed && <View style={styles.inputWrapper}>
           <Animated.View style={[
             styles.inputContainer,
             {
@@ -591,7 +647,7 @@ export default function ThreadScreen() {
               </TouchableOpacity>
             </View>
           </Animated.View>
-        </View>
+        </View>}
       </KeyboardAvoidingView>
 
       {/* Vote Modal */}
