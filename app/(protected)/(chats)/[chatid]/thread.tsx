@@ -562,7 +562,7 @@ export default function ThreadScreen() {
       <KeyboardAvoidingView
         style={styles.flex1}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 90}
       >
         {/* Bar Chart */}
         {renderBarChart()}

@@ -5,6 +5,7 @@ import { AuthContext } from '@/contexts/authContext';
 import { ChatProvider, useChats } from '@/contexts/ChatContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
+import * as NavigationBar from 'expo-navigation-bar';
 import { Redirect } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
 import { EditIcon, MessageCircle, Settings } from 'lucide-react-native';
@@ -25,7 +26,7 @@ function CustomDrawerContent(props: any) {
   const [profileUrl, setProfileUrl] = useState('https://api.dicebear.com/9.x/avataaars-neutral/svg?seed=Katherine');
   const [userName, setuserName] = useState('Jane Doe');
   const authContext = useContext(AuthContext);
-
+  
   useEffect(() => {
     const fetchProfileUrl = async () => {
 
@@ -161,6 +162,11 @@ export default function ProtectedLayout() {
   if (!authState.isReady) {
     return null;
   }
+
+  useEffect(() => {
+  NavigationBar.setVisibilityAsync('hidden');        // hide nav bar
+  NavigationBar.setBehaviorAsync('inset-touch'); // swipe-to-reveal
+}, []);
 
   if (!authState.isLoggedIn) {
     return <Redirect href="/authPage" />

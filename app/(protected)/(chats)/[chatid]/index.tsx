@@ -264,11 +264,32 @@ export default function ChatScreen() {
     <ScrollView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}
       contentContainerStyle={{ flexGrow: 1 }}
     >
-      <ThemedText>
+     {!error && !loading && <ThemedText>
         {renderMessage({ item: message })}
-      </ThemedText>
+      </ThemedText>}
       {/* Retry Button */}
       <View style={styles.inputWrapper}>
+        {
+          loading && !error && (
+             <View
+            style={{
+              flex: 1,
+              width: "100%",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Image
+              source={ require('@/assets/images/loading.webp')}
+              style={{
+                width: 420,
+                height: 420,
+                resizeMode: "contain",
+              }}
+            />
+            </View>
+          )
+        }
         {error && (
           <View
             style={{

@@ -155,7 +155,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     if (isReady) {
       SplashScreen.hideAsync();
     }
-  }, [isReady]);
+  }, [isReady, isLoggedIn]);
 
   return (
     <AuthContext.Provider value={{ isReady, isLoggedIn, user, hasCompletedOnboarding, logIn, register, logOut, updateProfile, completeOnboarding, resetOnboarding }}>
