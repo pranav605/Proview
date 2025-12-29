@@ -100,7 +100,7 @@ const AuthPage = () => {
                   {'Login'}
                 </Text>
               </TouchableOpacity>
-
+              <TouchableOpacity onPress={authState.resetOnboarding}><Text style={{ color: Colors[colorScheme ?? 'light'].text, textDecorationLine:'underline' }}>New to the app?</Text></TouchableOpacity>
               {/* Social Login Buttons */}
               <View style={styles.socialButtonsContainer}>
                 <TouchableOpacity

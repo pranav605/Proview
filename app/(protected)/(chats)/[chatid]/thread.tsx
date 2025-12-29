@@ -84,9 +84,9 @@ export default function ThreadScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [votes, setVotes] = useState<Record<VoteOption, number>>({
-    'worthit': 45,
-    'maybe': 30,
-    'skipit': 25,
+    'worthit': 0,
+    'maybe': 0,
+    'skipit': 0,
   });
   const [reviewId, setReviewId] = useState(null);
 
@@ -108,6 +108,21 @@ export default function ThreadScreen() {
     fetchChatData();
   }, []);
 
+  useEffect(()=>{
+    if(reviews.length > 0){
+      console.log("Reviews obtained:" , reviews);
+      let voteCount:Record<VoteOption, number> = {
+        'worthit': 0,
+        'maybe': 0,
+        'skipit': 0
+      }
+      reviews.forEach((review)=>{
+        voteCount[review.vote_type as VoteOption] += 1
+      })
+      setVotes(voteCount);
+    }
+  },[reviews])
+
   useEffect(() => {
     if (chatData?.product_id)
       fetchReviews();
@@ -118,7 +133,6 @@ export default function ThreadScreen() {
     if (error) {
       console.log(error);
     } else {
-      console.log("Reviews: ", data);
       if (data.length) {
         let reviewVote: ReviewVote[] = [];
         const promises = data.map(async (review) => {
@@ -330,7 +344,7 @@ export default function ThreadScreen() {
   );
 
   const totalVotes = votes['worthit'] + votes['maybe'] + votes['skipit'];
-  const maxBarWidth = width - 120;
+  const maxBarWidth = width - 200;
 
   const renderBarChart = () => {
     const chartData: Array<{ label: string; count: number; color: string; icon: any }> = [

@@ -83,15 +83,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
           .single();
 
 
-        const { data: urlData } = supabase.storage
-          .from('profile-images') // replace with your actual bucket name
-          .getPublicUrl(profile?.avatar_url);
+        let avatarUrl: string | null = null;
+
+        if (profile?.avatar_url) {
+          const { data } = supabase.storage
+            .from('profile-images')
+            .getPublicUrl(profile.avatar_url);
+
+          avatarUrl = data.publicUrl;
+        }
 
         setUser(profile ? {
-          ...profile,
-          avatar_url: urlData.publicUrl,
+          id: profile.id,
+          name: profile.name,
+          avatar_url: avatarUrl,
           email: session.user.email || ''
         } : null);
+
       } else {
         setUser(null);
       }

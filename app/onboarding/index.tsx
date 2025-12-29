@@ -245,6 +245,7 @@ export default function OnboardingScreen() {
                                             Colors[colorScheme ?? "light"].background,
                                     },
                                 ]}
+                                placeholderTextColor={ Colors[colorScheme ?? "light"].text}
                                 keyboardType="email-address"
                                 autoCapitalize="none"
                                 autoComplete="email"
@@ -263,6 +264,7 @@ export default function OnboardingScreen() {
                                         setAuthFields((p) => ({ ...p, password: text }))
                                     }
                                     placeholder="Password"
+                                    placeholderTextColor={ Colors[colorScheme ?? "light"].text}
                                     style={[
                                         styles.inputField,
                                         {

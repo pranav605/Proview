@@ -2,7 +2,7 @@ import { ThemedText } from '@/components/themed-text'
 import { ThemedView } from '@/components/themed-view'
 import { AuthContext } from '@/contexts/authContext'
 import React, { useContext, useEffect, useState } from 'react'
-import { Button, Image, StyleSheet, TouchableOpacity } from 'react-native'
+import { Button, Image, ScrollView, StyleSheet, TouchableOpacity } from 'react-native'
 
 const settings = () => {
   const authContext = useContext(AuthContext)
@@ -34,6 +34,7 @@ const settings = () => {
 
   return (
     <ThemedView style={styles.container}>
+      <ScrollView style={{padding:0, margin:0}} showsVerticalScrollIndicator={false}>
       {/* Profile */}
       <ThemedView style={styles.profileSection}>
         <Image source={{ uri: profileUrl }} height={80} width={80} style={styles.profileImage} />
@@ -71,6 +72,7 @@ const settings = () => {
 
       {/* Logout */}
       <Button title="Logout" color="red" onPress={handleLogOut} />
+      </ScrollView>
     </ThemedView>
   )
 }
