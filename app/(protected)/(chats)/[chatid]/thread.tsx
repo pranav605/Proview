@@ -40,6 +40,7 @@ type Review = {
   downvote_count: number;
   profiles: {
     name: string;
+    avatar_url: string;
   };
   isUpvoted: boolean;
 };
@@ -108,20 +109,20 @@ export default function ThreadScreen() {
     fetchChatData();
   }, []);
 
-  useEffect(()=>{
-    if(reviews.length > 0){
-      console.log("Reviews obtained:" , reviews);
-      let voteCount:Record<VoteOption, number> = {
+  useEffect(() => {
+    if (reviews.length > 0) {
+      console.log("Reviews obtained:", reviews);
+      let voteCount: Record<VoteOption, number> = {
         'worthit': 0,
         'maybe': 0,
         'skipit': 0
       }
-      reviews.forEach((review)=>{
+      reviews.forEach((review) => {
         voteCount[review.vote_type as VoteOption] += 1
       })
       setVotes(voteCount);
     }
-  },[reviews])
+  }, [reviews])
 
   useEffect(() => {
     if (chatData?.product_id)
@@ -129,13 +130,25 @@ export default function ThreadScreen() {
   }, [chatData])
 
   const fetchReviews = async () => {
-    const { data, error } = await supabase.from('reviews').select('*, profiles:given_by (name)').eq('product_id', chatData?.product_id);
+
+    const { data, error } = await supabase.from('reviews').select('*, profiles:given_by (name, avatar_url)').eq('product_id', chatData?.product_id);
     if (error) {
       console.log(error);
     } else {
       if (data.length) {
         let reviewVote: ReviewVote[] = [];
         const promises = data.map(async (review) => {
+          if (review.profiles?.avatar_url) {
+            const { data } = supabase.storage
+              .from('profile-images')
+              .getPublicUrl(review.profiles.avatar_url);
+
+            review.profiles = {
+              ...review.profiles,
+              avatar_url: data.publicUrl,
+            };
+          }
+
           if (review.given_by === authContext.user?.id) {
             setHasReviewed(true);
           }
@@ -437,9 +450,9 @@ export default function ThreadScreen() {
     >
       <View style={styles.reviewHeader}>
         <View style={styles.avatarPlaceholder}>
-          {authContext.user?.avatar_url ? <Image
+          {item.profiles.avatar_url ? <Image
             source={{
-              uri: authContext.user.avatar_url,
+              uri: item.profiles.avatar_url,
             }}
             alt="user"
             style={{ width: 40, height: 40, borderRadius: 25 }}
