@@ -84,15 +84,9 @@ export default function ThreadScreen() {
   const [isVerdictExpanded, setIsVerdictExpanded] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [votes, setVotes] = useState<Record<VoteOption, number>>({
-    'worthit': 0,
-    'maybe': 0,
-    'skipit': 0,
-  });
   const [reviewId, setReviewId] = useState(null);
 
   const [voteType, setVoteType] = useState('');
-  const [hasReviewed, setHasReviewed] = useState(false);
 
   const animatedHeight = useRef(new Animated.Value(50)).current;
   const flatListRef = useRef<FlatList>(null);
@@ -109,20 +103,18 @@ export default function ThreadScreen() {
     fetchChatData();
   }, []);
 
-  useEffect(() => {
-    if (reviews.length > 0) {
-      console.log("Reviews obtained:", reviews);
-      let voteCount: Record<VoteOption, number> = {
-        'worthit': 0,
-        'maybe': 0,
-        'skipit': 0
-      }
-      reviews.forEach((review) => {
-        voteCount[review.vote_type as VoteOption] += 1
-      })
-      setVotes(voteCount);
-    }
-  }, [reviews])
+  const votes = reviews.reduce(
+  (acc, review) => {
+    acc[review.vote_type as VoteOption] += 1;
+    return acc;
+  },
+  { worthit: 0, maybe: 0, skipit: 0 } as Record<VoteOption, number>
+);
+
+  const hasReviewed = reviews.some(
+    (r) => r.given_by === authContext.user?.id
+  );
+
 
   useEffect(() => {
     if (chatData?.product_id)
@@ -149,9 +141,6 @@ export default function ThreadScreen() {
             };
           }
 
-          if (review.given_by === authContext.user?.id) {
-            setHasReviewed(true);
-          }
           const { data: fetchedVotes, error: reviewVotesError } = await supabase
             .from('review_votes')
             .select('*')
