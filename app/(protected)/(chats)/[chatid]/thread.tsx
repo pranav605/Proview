@@ -763,8 +763,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   reviewCard: {
-    paddingVertical: 16,
-    marginBottom: 12,
+    paddingVertical: 8,
   },
   reviewHeader: {
     flexDirection: 'row',
